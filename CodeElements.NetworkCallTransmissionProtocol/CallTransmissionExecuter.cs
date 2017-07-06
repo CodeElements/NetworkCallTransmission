@@ -4,7 +4,6 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using CodeElements.NetworkCallTransmissionProtocol.Extensions;
-using CodeElements.NetworkCallTransmissionProtocol.NetSerializer;
 
 namespace CodeElements.NetworkCallTransmissionProtocol
 {

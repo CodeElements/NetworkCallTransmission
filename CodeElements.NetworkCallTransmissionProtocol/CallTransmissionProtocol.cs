@@ -8,10 +8,9 @@ using System.Reflection;
 using System.Security.Cryptography;
 using System.Threading;
 using System.Threading.Tasks;
-using Castle.DynamicProxy;
-using CodeElements.NetworkCallTransmissionProtocol.Castle;
 using CodeElements.NetworkCallTransmissionProtocol.Extensions;
 using CodeElements.NetworkCallTransmissionProtocol.NetSerializer;
+using CodeElements.NetworkCallTransmissionProtocol.Proxy;
 
 namespace CodeElements.NetworkCallTransmissionProtocol
 {
@@ -48,7 +47,7 @@ namespace CodeElements.NetworkCallTransmissionProtocol
                 throw new ArgumentException("Only interfaces accepted.", nameof(TInterface));
 
             _lazyInterface =
-                new Lazy<TInterface>(() => (TInterface) CastleProxyFactory.CreateProxy(typeof(TInterface), this),
+                new Lazy<TInterface>(() => ProxyFactory.CreateProxy<TInterface>(this),
                     LazyThreadSafetyMode.ExecutionAndPublication);
 
             _md5 = MD5.Create();
@@ -77,22 +76,13 @@ namespace CodeElements.NetworkCallTransmissionProtocol
         public TimeSpan WaitTimeout { get; set; } = TimeSpan.FromSeconds(30);
 
         /// <summary>
-        ///     Intercepts a synchronous method <paramref name="invocation" />.
-        /// </summary>
-        /// <param name="invocation">The method invocation.</param>
-        void IAsyncInterceptor.InterceptSynchronous(IInvocation invocation)
-        {
-            throw new NotImplementedException();
-        }
-
-        /// <summary>
         ///     Intercepts an asynchronous method <paramref name="invocation" /> with return type of
         ///     <see cref="T:System.Threading.Tasks.Task" />.
         /// </summary>
         /// <param name="invocation">The method invocation.</param>
         void IAsyncInterceptor.InterceptAsynchronous(IInvocation invocation)
         {
-            var methodCache = _methods[invocation.Method];
+            var methodCache = _methods[invocation.MethodInfo];
             invocation.ReturnValue = SendMethodCall(methodCache, invocation.Arguments);
         }
 
@@ -107,7 +97,7 @@ namespace CodeElements.NetworkCallTransmissionProtocol
         /// <param name="invocation">The method invocation.</param>
         void IAsyncInterceptor.InterceptAsynchronous<TResult>(IInvocation invocation)
         {
-            var methodCache = _methods[invocation.Method];
+            var methodCache = _methods[invocation.MethodInfo];
             invocation.ReturnValue = Task.Run(async () =>
             {
                 var result = await SendMethodCall(methodCache, invocation.Arguments);
