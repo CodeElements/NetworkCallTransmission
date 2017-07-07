@@ -1,6 +1,7 @@
 ﻿using System;
 using System.IO;
 using System.Threading.Tasks;
+using CodeElements.NetworkCallTransmissionProtocol.Internal;
 using Xunit;
 
 namespace CodeElements.NetworkCallTransmissionProtocol.Test
@@ -24,14 +25,17 @@ namespace CodeElements.NetworkCallTransmissionProtocol.Test
         [Fact]
         public async Task TestAwaitWorks()
         {
+            var testData = new byte[12];
+            StaticRandom.NextBytes(testData);
+
             var x = new ResultCallback();
-            var testMemoryStream = new MemoryStream(new byte[1]);
             await Task.Delay(TimeSpan.FromMilliseconds(50))
-                .ContinueWith(task => x.ReceivedResult(ResponseType.MethodExecuted, testMemoryStream));
+                .ContinueWith(task => x.ReceivedResult(ResponseType.MethodExecuted, testData, 4));
             await x.Wait(TimeSpan.FromSeconds(1));
 
-            Assert.True(x.ResponseType == ResponseType.MethodExecuted);
-            Assert.True(x.Data == testMemoryStream);
+            Assert.Equal(ResponseType.MethodExecuted, x.ResponseType);
+            Assert.Equal(testData, x.Data);
+            Assert.Equal(4, x.Offset);
         }
 
         [Fact]
@@ -39,7 +43,7 @@ namespace CodeElements.NetworkCallTransmissionProtocol.Test
         {
             var x = new ResultCallback();
             Assert.False(await x.Wait(TimeSpan.FromMilliseconds(100)));
-            x.ReceivedResult(ResponseType.Exception, null); //no exception
+            x.ReceivedResult(ResponseType.Exception, null, 0); //no exception
         }
 
         [Fact]
@@ -48,7 +52,7 @@ namespace CodeElements.NetworkCallTransmissionProtocol.Test
             var x = new ResultCallback();
             Assert.False(await x.Wait(TimeSpan.FromMilliseconds(50)));
             x.Dispose();
-            x.ReceivedResult(ResponseType.MethodExecuted, null);
+            x.ReceivedResult(ResponseType.MethodExecuted, null, 0);
         }
     }
 }

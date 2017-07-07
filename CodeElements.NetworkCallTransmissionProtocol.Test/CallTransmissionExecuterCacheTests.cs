@@ -1,5 +1,4 @@
 ﻿using System;
-using System.IO;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -7,27 +6,27 @@ namespace CodeElements.NetworkCallTransmissionProtocol.Test
 {
     public class CallTransmissionExecuterCacheTests
     {
-        private readonly CallTransmissionExecuter<ITestInterface> _executer;
-        private readonly CallTransmissionProtocol<ITestInterface> _transmissionProtocol;
-
         public CallTransmissionExecuterCacheTests()
         {
-            var exe1 = new CallTransmissionExecuter<ITestInterface>(new TestInterfaceImpl());
+            var exe1 = new CallTransmissionExecuter<IBasicTestInterface>(new BasicTestInterfaceImpl());
             var cache = exe1.Cache;
-            _executer = new CallTransmissionExecuter<ITestInterface>(new TestInterfaceImpl(), cache);
+            _executer = new CallTransmissionExecuter<IBasicTestInterface>(new BasicTestInterfaceImpl(), cache);
 
-            _transmissionProtocol = new CallTransmissionProtocol<ITestInterface>
+            _transmissionProtocol = new CallTransmissionProtocol<IBasicTestInterface>
             {
                 SendData = SendData,
                 WaitTimeout = TimeSpan.FromSeconds(5)
             };
         }
 
-        private async Task SendData(MemoryStream memoryStream)
+        private readonly CallTransmissionExecuter<IBasicTestInterface> _executer;
+        private readonly CallTransmissionProtocol<IBasicTestInterface> _transmissionProtocol;
+
+        private async Task SendData(ResponseData responseData)
         {
-            var buffer = memoryStream.ToArray();
-            var result = await _executer.ReceiveData(buffer, 0, buffer.Length);
-            _transmissionProtocol.ReceiveData(result, 0, result.Length);
+            var buffer = responseData;
+            var result = await _executer.ReceiveData(buffer.Data, 0, buffer.Length);
+            _transmissionProtocol.ReceiveData(result.Data, 0, result.Length);
         }
 
         [Fact]

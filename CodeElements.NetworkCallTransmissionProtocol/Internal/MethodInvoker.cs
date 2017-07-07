@@ -1,10 +1,10 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq.Expressions;
 using System.Reflection;
 using System.Threading.Tasks;
-using CodeElements.NetworkCallTransmissionProtocol.NetSerializer;
 
-namespace CodeElements.NetworkCallTransmissionProtocol
+namespace CodeElements.NetworkCallTransmissionProtocol.Internal
 {
     internal class MethodInvoker
     {
@@ -12,20 +12,21 @@ namespace CodeElements.NetworkCallTransmissionProtocol
 
         private readonly ReturnValueDelegate _delegate;
 
-        public MethodInvoker(MethodInfo methodInfo, Serializer[] parameterSerializers, Serializer returnSerializer, int parametersCount)
+        public MethodInvoker(MethodInfo methodInfo, Type[] parameterTypes, Type returnType)
         {
-            ParameterSerializers = parameterSerializers;
-            ReturnSerializer = returnSerializer;
-            ParametersCount = parametersCount;
+            ParameterTypes = parameterTypes;
+            ReturnsResult = returnType != null;
+            ReturnType = returnType;
             _delegate = BuildDelegate(methodInfo);
 
-            if (returnSerializer != null)
+            if (ReturnsResult)
                 TaskReturnPropertyInfo = methodInfo.ReturnType.GetProperty("Result");
         }
 
-        public Serializer ReturnSerializer { get; }
-        public Serializer[] ParameterSerializers { get; }
-        public int ParametersCount { get; }
+        public Type ReturnType { get; }
+        public int ParameterCount => ParameterTypes.Length;
+        public Type[] ParameterTypes { get; }
+        public bool ReturnsResult { get; }
         public PropertyInfo TaskReturnPropertyInfo { get; }
 
         public Task Invoke(object instance, object[] arguments)

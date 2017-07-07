@@ -50,11 +50,15 @@
     <Reference Include="xunit.execution.desktop, Version=2.2.0.3545, Culture=neutral, PublicKeyToken=8d05b1bb7a6fdb6c, processorArchitecture=MSIL">
       <HintPath>..\packages\xunit.extensibility.execution.2.2.0\lib\net452\xunit.execution.desktop.dll</HintPath>
     </Reference>
+    <Reference Include="ZeroFormatter.Interfaces, Version=1.6.4.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\ZeroFormatter.Interfaces.1.6.4\lib\net45\ZeroFormatter.Interfaces.dll</HintPath>
+    </Reference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="BinaryExtensionsTests.cs" />
+    <Compile Include="CallTransmissionExceptionTests.cs" />
     <Compile Include="CallTransmissionExecuterCacheTests.cs" />
-    <Compile Include="CallTransmissionProtocolBasicTests.cs" />
+    <Compile Include="CallTransmissionBasicTests.cs" />
+    <Compile Include="CallTransmissionTestBase.cs" />
     <Compile Include="ExecuterInterfaceCacheTests.cs" />
     <Compile Include="MethodInvokerTests.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

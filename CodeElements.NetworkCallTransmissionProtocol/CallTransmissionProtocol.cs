@@ -2,15 +2,16 @@
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics.Contracts;
-using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Security.Cryptography;
 using System.Threading;
 using System.Threading.Tasks;
+using CodeElements.NetworkCallTransmissionProtocol.Exceptions;
 using CodeElements.NetworkCallTransmissionProtocol.Extensions;
-using CodeElements.NetworkCallTransmissionProtocol.NetSerializer;
+using CodeElements.NetworkCallTransmissionProtocol.Internal;
 using CodeElements.NetworkCallTransmissionProtocol.Proxy;
+using ZeroFormatter;
 
 namespace CodeElements.NetworkCallTransmissionProtocol
 {
@@ -23,14 +24,13 @@ namespace CodeElements.NetworkCallTransmissionProtocol
         /// <summary>
         ///     The delegate which will get invoked when a package should be sent to the remote site
         /// </summary>
-        /// <param name="memoryStream">The memory stream that keeps the data to be sent.</param>
+        /// <param name="data">The data to send.</param>
         /// <returns>Return the task which completes once the package is sent</returns>
-        public delegate Task SendDataDelegate(MemoryStream memoryStream);
+        public delegate Task SendDataDelegate(ResponseData data);
 
         // ReSharper disable once StaticMemberInGenericType
 
         private readonly ConcurrentDictionary<uint, ResultCallback> _callbacks;
-        private readonly Lazy<Serializer> _exceptionSerializer;
         private readonly Lazy<TInterface> _lazyInterface;
         private readonly MD5 _md5;
         private int _callIdCounter;
@@ -54,8 +54,22 @@ namespace CodeElements.NetworkCallTransmissionProtocol
             InitializeInterface(typeof(TInterface));
 
             _callbacks = new ConcurrentDictionary<uint, ResultCallback>();
-            _exceptionSerializer = new Lazy<Serializer>(() => new Serializer(ProtocolInfo.SupportedExceptionTypes),
-                LazyThreadSafetyMode.ExecutionAndPublication);
+        }
+
+        /// <summary>Performs application-defined tasks associated with freeing, releasing, or resetting unmanaged resources.</summary>
+        public void Dispose()
+        {
+            if (!_isDisposed)
+            {
+                _isDisposed = true;
+
+                _md5?.Dispose();
+                foreach (var key in _callbacks.Keys)
+                {
+                    if (_callbacks.TryRemove(key, out var resultCallback))
+                        resultCallback.Dispose();
+                }
+            }
         }
 
         /// <summary>
@@ -105,22 +119,6 @@ namespace CodeElements.NetworkCallTransmissionProtocol
             });
         }
 
-        /// <summary>Performs application-defined tasks associated with freeing, releasing, or resetting unmanaged resources.</summary>
-        public void Dispose()
-        {
-            if (!_isDisposed)
-            {
-                _isDisposed = true;
-
-                _md5?.Dispose();
-                foreach (var key in _callbacks.Keys)
-                {
-                    if (_callbacks.TryRemove(key, out var resultCallback))
-                        resultCallback.Dispose();
-                }
-            }
-        }
-
         private void InitializeInterface(Type interfaceType)
         {
             var members = interfaceType.GetMembers();
@@ -135,7 +133,6 @@ namespace CodeElements.NetworkCallTransmissionProtocol
                 throw new ArgumentException("The interface must at least provide one method.", nameof(interfaceType));
 
             var dictionary = new Dictionary<MethodInfo, MethodCache>();
-            var serializerDictionary = new Dictionary<Type[], Serializer>(new TypeArrayEqualityComparer());
 
             foreach (var methodInfo in methods)
             {
@@ -148,43 +145,7 @@ namespace CodeElements.NetworkCallTransmissionProtocol
                 else
                     throw new ArgumentException("Only tasks are supported as return type.", methodInfo.ToString());
 
-                var methodCache = new MethodCache(methodInfo.GetMethodId(_md5));
-
-                if (actualReturnType != null) //if the tasks returns something
-                {
-                    var returnTypesAttribute = methodInfo.GetCustomAttribute<AdditionalTypesAttribute>();
-                    var types = new Type[1 + (returnTypesAttribute?.Types.Length ?? 0)];
-                    types[0] = actualReturnType;
-
-                    if (returnTypesAttribute?.Types.Length > 0)
-                        Array.Copy(returnTypesAttribute.Types, 0, types, 1, returnTypesAttribute.Types.Length);
-
-                    if (!serializerDictionary.TryGetValue(types, out var returnSerializer))
-                        serializerDictionary.Add(types, returnSerializer = new Serializer(types));
-
-                    methodCache.ReturnSerializer = returnSerializer;
-                }
-
-                var parameters = methodInfo.GetParameters();
-                methodCache.ParameterSerializers = new Serializer[parameters.Length];
-
-                for (var i = 0; i < parameters.Length; i++)
-                {
-                    var parameter = parameters[i];
-                    var additionalTypes = parameter.GetCustomAttribute<AdditionalTypesAttribute>();
-
-                    var types = new Type[1 + (additionalTypes?.Types.Length ?? 0)];
-                    types[0] = parameter.ParameterType;
-
-                    if (additionalTypes?.Types.Length > 0)
-                        Array.Copy(additionalTypes.Types, 0, types, 1, additionalTypes.Types.Length);
-
-                    if (!serializerDictionary.TryGetValue(types, out var serializer))
-                        serializerDictionary.Add(types, serializer = new Serializer(types));
-
-                    methodCache.ParameterSerializers[i] = serializer;
-                }
-
+                var methodCache = new MethodCache(methodInfo.GetMethodId(_md5), actualReturnType, methodInfo.GetParameters().Select(x => x.ParameterType).ToArray());
                 dictionary.Add(methodInfo, methodCache);
             }
 
@@ -204,14 +165,11 @@ namespace CodeElements.NetworkCallTransmissionProtocol
                 buffer[offset++] != ProtocolInfo.Header3Return || buffer[offset++] != ProtocolInfo.Header4)
                 throw new ArgumentException("The package is invalid.");
 
-            var memoryStream = new MemoryStream(buffer, offset, length - offset, false);
-            var binaryReader = new BinaryReader(memoryStream);
-
-            var callbackId = binaryReader.ReadBigEndian7BitEncodedInt();
-            var responseType = (ResponseType)binaryReader.ReadByte();
+            var callbackId = BitConverter.ToUInt32(buffer, offset);
+            var responseType = (ResponseType) buffer[offset + 4];
 
             if (_callbacks.TryRemove(callbackId, out var callback))
-                callback.ReceivedResult(responseType, memoryStream);
+                callback.ReceivedResult(responseType, buffer, offset + 5);
             else
                 return; //could also throw exception here
         }
@@ -226,48 +184,42 @@ namespace CodeElements.NetworkCallTransmissionProtocol
             //HEAD      - 4 bytes                   - Identifier, ASCII (NTC1)
             //HEAD      - integer                   - callback identifier
             //HEAD      - 16 bytes                  - The method identifier
+            //HEAD      - integer * parameters      - the length of each parameter
             //--------------------------------------------------------------------------
             //DATA      - length of the parameters  - serialized parameters
 
             var callbackId = (uint) Interlocked.Increment(ref _callIdCounter);
 
-            ResultCallback callback;
-            Task<bool> callbackWait;
+            var buffer = new byte[4 /* Header */ + 4 /* Callback id */ + 16 /* method id */ + parameters.Length * 4 /* parameter meta */ + 200 * parameters.Length /* parameter data */];
+            var bufferOffset = 24 + parameters.Length * 4;
 
-            using (var memoryStream = new MemoryStream(512))
+            for (int i = 0; i < parameters.Length; i++)
             {
-                var binaryWriter = new BinaryWriter(memoryStream);
+                var metaOffset = 24 + i * 4;
+                var parameterLength = ZeroFormatterSerializer.NonGeneric.Serialize(methodCache.ParameterTypes[i],ref buffer, bufferOffset, parameters[i]);
+                Buffer.BlockCopy(BitConverter.GetBytes(parameterLength), 0, buffer, metaOffset, 4);
 
-                //write header
-                binaryWriter.Write(ProtocolInfo.Header1);
-                binaryWriter.Write(ProtocolInfo.Header2);
-                binaryWriter.Write(ProtocolInfo.Header3Call);
-                binaryWriter.Write(ProtocolInfo.Header4);
-
-                //write callback id
-                binaryWriter.WriteBigEndian7BitEncodedInt(callbackId);
-
-                //method identifier
-                binaryWriter.Write(methodCache.MethodId);
-
-                //parameters
-                for (int i = 0; i < parameters.Length; i++)
-                {
-                    //we remember the start position of the parameter
-                    var parameter = parameters[i];
-                    var serializer = methodCache.ParameterSerializers[i];
-
-                    //serialize the parameter
-                    serializer.Serialize(memoryStream, parameter);
-                }
-
-                callback = new ResultCallback();
-                callbackWait = callback.Wait(WaitTimeout);
-
-                _callbacks.TryAdd(callbackId, callback); //impossible that this goes wrong
-
-                OnSendData(memoryStream).Forget(); //no need to await that
+                bufferOffset += parameterLength;
             }
+
+            //write header
+            buffer[0] = ProtocolInfo.Header1;
+            buffer[1] = ProtocolInfo.Header2;
+            buffer[2] = ProtocolInfo.Header3Call;
+            buffer[3] = ProtocolInfo.Header4;
+
+            //write callback id
+            Buffer.BlockCopy(BitConverter.GetBytes(callbackId), 0, buffer, 4, 4);
+
+            //method identifier
+            Buffer.BlockCopy(methodCache.MethodId, 0, buffer, 8, 16);
+
+            var callback = new ResultCallback();
+            var callbackWait = callback.Wait(WaitTimeout);
+
+            _callbacks.TryAdd(callbackId, callback); //impossible that this goes wrong
+
+            OnSendData(new ResponseData(buffer, bufferOffset)).Forget(); //no need to await that
 
             using (callback)
             {
@@ -282,10 +234,10 @@ namespace CodeElements.NetworkCallTransmissionProtocol
                     case ResponseType.MethodExecuted:
                         return null;
                     case ResponseType.ResultReturned:
-                        return methodCache.ReturnSerializer.Deserialize(callback.Data);
+                        return ZeroFormatterSerializer.NonGeneric.Deserialize(methodCache.ReturnType, callback.Data,
+                            callback.Offset);
                     case ResponseType.Exception:
-                        var exception = (Exception) _exceptionSerializer.Value.Deserialize(callback.Data);
-                        throw exception;
+                        throw ExceptionSerializer.Deserialize(callback.Data, callback.Offset);
                     case ResponseType.MethodNotImplemented:
                         throw new NotImplementedException("The remote method is not implemented.");
                     default:
@@ -294,13 +246,13 @@ namespace CodeElements.NetworkCallTransmissionProtocol
             }
         }
 
-        protected virtual Task OnSendData(MemoryStream memoryStream)
+        protected virtual Task OnSendData(ResponseData data)
         {
             if (SendData == null)
                 throw new InvalidOperationException(
                     "The SendData delegate is null. Please initialize this class before using.");
 
-            return SendData(memoryStream);
+            return SendData(data);
         }
     }
 }

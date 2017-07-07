@@ -8,7 +8,7 @@ namespace CodeElements.NetworkCallTransmissionProtocol.Extensions
     internal static class LinqExtensions
     {
         /// <summary>
-        ///     Partitions the given list around a pivot element such that all elements on left of pivot are <= pivot
+        ///     Partitions the given list around a pivot element such that all elements on left of pivot are &lt;= pivot
         ///     and the ones at thr right are > pivot. This method can be used for sorting, N-order statistics such as
         ///     as median finding algorithms.
         ///     Pivot is selected ranodmly if random number generator is supplied else its selected as last element in the list.
@@ -23,10 +23,8 @@ namespace CodeElements.NetworkCallTransmissionProtocol.Extensions
             var pivot = list[end];
             var lastLow = start - 1;
             for (var i = start; i < end; i++)
-            {
                 if (list[i].CompareTo(pivot) <= 0)
                     list.Swap(i, ++lastLow);
-            }
             list.Swap(end, ++lastLow);
             return lastLow;
         }

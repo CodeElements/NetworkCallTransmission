@@ -1,9 +1,8 @@
 using System;
-using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace CodeElements.NetworkCallTransmissionProtocol
+namespace CodeElements.NetworkCallTransmissionProtocol.Internal
 {
     internal class ResultCallback : IDisposable
     {
@@ -21,25 +20,27 @@ namespace CodeElements.NetworkCallTransmissionProtocol
             {
                 _isDisposed = true;
                 _semaphoreSlim?.Dispose();
-                Data?.Dispose();
+                Data = null;
             }
         }
 
         public ResponseType ResponseType { get; private set; }
-        public MemoryStream Data { get; private set; }
+        public byte[] Data { get; private set; }
+        public int Offset { get; private set; }
 
         public Task<bool> Wait(TimeSpan timeout)
         {
             return _semaphoreSlim.WaitAsync(timeout);
         }
 
-        public void ReceivedResult(ResponseType responseType, MemoryStream memoryStream)
+        public void ReceivedResult(ResponseType responseType, byte[] data, int offset)
         {
             if (_isDisposed)
                 return;
 
             ResponseType = responseType;
-            Data = memoryStream;
+            Data = data;
+            Offset = offset;
 
             _semaphoreSlim.Release();
         }

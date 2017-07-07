@@ -1,4 +1,4 @@
-namespace CodeElements.NetworkCallTransmissionProtocol
+namespace CodeElements.NetworkCallTransmissionProtocol.Internal
 {
     internal enum ResponseType
     {

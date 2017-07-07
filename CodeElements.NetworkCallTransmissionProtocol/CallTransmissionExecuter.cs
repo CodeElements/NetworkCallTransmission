@@ -1,9 +1,9 @@
 ﻿using System;
-using System.IO;
 using System.Text;
-using System.Threading;
 using System.Threading.Tasks;
-using CodeElements.NetworkCallTransmissionProtocol.Extensions;
+using CodeElements.NetworkCallTransmissionProtocol.Exceptions;
+using CodeElements.NetworkCallTransmissionProtocol.Internal;
+using ZeroFormatter;
 
 namespace CodeElements.NetworkCallTransmissionProtocol
 {
@@ -13,7 +13,6 @@ namespace CodeElements.NetworkCallTransmissionProtocol
     /// <typeparam name="TInterface">The remote interface. The receiving site must have the same interface available.</typeparam>
     public class CallTransmissionExecuter<TInterface>
     {
-        private readonly Lazy<Serializer> _exceptionSerializer;
         private readonly TInterface _interfaceImplementation;
 
         /// <summary>
@@ -34,8 +33,6 @@ namespace CodeElements.NetworkCallTransmissionProtocol
         {
             _interfaceImplementation = interfaceImplementation;
             Cache = cache;
-            _exceptionSerializer = new Lazy<Serializer>(() => new Serializer(ProtocolInfo.SupportedExceptionTypes),
-                LazyThreadSafetyMode.ExecutionAndPublication);
         }
 
         /// <summary>
@@ -51,13 +48,14 @@ namespace CodeElements.NetworkCallTransmissionProtocol
         /// <param name="offset">The index into buffer at which the data begins</param>
         /// <param name="length">The length of the data in bytes.</param>
         /// <returns>Returns the answer which should be sent back to the client</returns>
-        public async Task<byte[]> ReceiveData(byte[] buffer, int offset, int length)
+        public async Task<ResponseData> ReceiveData(byte[] buffer, int offset, int length)
         {
             //PROTOCOL
             //CALL:
             //HEAD      - 4 bytes                   - Identifier, ASCII (NTC1)
             //HEAD      - integer                   - callback identifier
             //HEAD      - 16 bytes                  - The method identifier
+            //HEAD      - integer * parameters      - the length of each parameter
             //--------------------------------------------------------------------------
             //DATA      - length of the parameters  - serialized parameters
             //
@@ -74,74 +72,72 @@ namespace CodeElements.NetworkCallTransmissionProtocol
             if (buffer[offset++] != 1)
                 throw new NotSupportedException($"The version {buffer[offset - 1]} is not supported.");
 
-            using (var memoryStream = new MemoryStream(buffer, offset, length - offset, false))
+            var id = Encoding.ASCII.GetString(buffer, offset + 4, 16); //16 bytes
+
+            void WriteResponseHeader(byte[] data)
             {
-                var binaryReader = new BinaryReader(memoryStream);
-                binaryReader.ReadBigEndian7BitEncodedInt();
+                data[0] = ProtocolInfo.Header1;
+                data[1] = ProtocolInfo.Header2;
+                data[2] = ProtocolInfo.Header3Return;
+                data[3] = ProtocolInfo.Header4;
+                Buffer.BlockCopy(buffer, 4, data, 4, 4);
+            }
 
-                var callbackIdLength = (int) memoryStream.Position;
+            //method not found/implemented
+            if (!Cache.MethodInvokers.TryGetValue(id, out var methodInvoker))
+            {
+                var response = new byte[8 /* Header */ + 1 /* response type */];
+                WriteResponseHeader(response);
+                response[8] = (byte) ResponseType.MethodNotImplemented;
+                return new ResponseData(response);
+            }
 
-                var id = Encoding.ASCII.GetString(buffer, offset + (int) memoryStream.Position, 16); //16 bytes
+            var parameters = new object[methodInvoker.ParameterCount];
+            var parameterOffset = 24 + parameters.Length * 4;
 
-                memoryStream.Position += 16;
+            for (int i = 0; i < methodInvoker.ParameterCount; i++)
+            {
+                var type = methodInvoker.ParameterTypes[i];
+                var parameterLength = BitConverter.ToInt32(buffer, offset + 20 + i * 4);
 
-                //method not found/implemented
-                if (!Cache.MethodInvokers.TryGetValue(id, out var methodInvoker))
-                {
-                    var response = new byte[4 /* Header */+ callbackIdLength + 1 /* response type */];
-                    response[0] = ProtocolInfo.Header1;
-                    response[1] = ProtocolInfo.Header2;
-                    response[2] = ProtocolInfo.Header3Return;
-                    response[3] = ProtocolInfo.Header4;
+                parameters[i] = ZeroFormatterSerializer.NonGeneric.Deserialize(type, buffer, parameterOffset);
+                parameterOffset += parameterLength;
+            }
 
-                    Buffer.BlockCopy(buffer, offset, response, 4, callbackIdLength);
-                    response[response.Length - 1] = (byte) ResponseType.MethodNotImplemented;
-                    return response;
-                }
+            Task task;
+            try
+            {
+                task = methodInvoker.Invoke(_interfaceImplementation, parameters);
+                await task;
+            }
+            catch (Exception e)
+            {
+                var data = ExceptionSerializer.Serialize(e);
+                var response = new byte[8 /* Header */ + 1 /* response type */ + data.Length /* exception */];
+                WriteResponseHeader(response);
+                response[8] = (byte) ResponseType.Exception;
+                Buffer.BlockCopy(data, 0, response, 9, data.Length);
+                return new ResponseData(response);
+            }
 
-                var parameters = new object[methodInvoker.ParametersCount];
-                for (int i = 0; i < methodInvoker.ParametersCount; i++)
-                {
-                    var serializer = methodInvoker.ParameterSerializers[i];
-                    parameters[i] = serializer.Deserialize(memoryStream);
-                }
+            if (methodInvoker.ReturnsResult)
+            {
+                var result = methodInvoker.TaskReturnPropertyInfo.GetValue(task);
 
-                using (var responseStream = new MemoryStream(100))
-                {
-                    responseStream.WriteByte(ProtocolInfo.Header1);
-                    responseStream.WriteByte(ProtocolInfo.Header2);
-                    responseStream.WriteByte(ProtocolInfo.Header3Return);
-                    responseStream.WriteByte(ProtocolInfo.Header4);
-                    responseStream.Write(buffer, offset, callbackIdLength);
+                var response = new byte[1000];
+                WriteResponseHeader(response);
+                response[8] = (byte) ResponseType.ResultReturned;
 
-                    var task = methodInvoker.Invoke(_interfaceImplementation, parameters);
-                    try
-                    {
-                        await task;
-                    }
-                    catch (Exception e)
-                    {
-                        responseStream.WriteByte((byte) ResponseType.Exception);
-                        var exceptionType = e.GetType();
-                        var exception = Array.IndexOf(ProtocolInfo.SupportedExceptionTypes, exceptionType) > -1
-                            ? e
-                            : new RemoteException(e);
-
-                        _exceptionSerializer.Value.Serialize(responseStream, exception);
-                        return responseStream.ToArray();
-                    }
-
-                    if (methodInvoker.ReturnSerializer != null)
-                    {
-                        var result = methodInvoker.TaskReturnPropertyInfo.GetValue(task);
-                        responseStream.WriteByte((byte) ResponseType.ResultReturned);
-                        methodInvoker.ReturnSerializer.Serialize(responseStream, result);
-                    }
-                    else
-                        responseStream.WriteByte((byte) ResponseType.MethodExecuted);
-
-                    return responseStream.ToArray();
-                }
+                var responseLength =
+                    ZeroFormatterSerializer.NonGeneric.Serialize(methodInvoker.ReturnType, ref response, 9, result);
+                return new ResponseData(response, responseLength);
+            }
+            else
+            {
+                var response = new byte[8 /* Header */ + 1 /* response type */];
+                WriteResponseHeader(response);
+                response[8] = (byte) ResponseType.MethodExecuted;
+                return new ResponseData(response);
             }
         }
     }

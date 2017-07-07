@@ -1,39 +1,27 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Threading.Tasks;
 using Xunit;
+using ZeroFormatter;
 
 namespace CodeElements.NetworkCallTransmissionProtocol.Test
 {
-    public class CallTransmissionProtocolBasicTests
+    public class CallTransmissionBasicTests : CallTransmissionTestBase<IBasicTestInterface>
     {
-        private readonly CallTransmissionProtocol<ITestInterface> _transmissionProtocol;
-        private readonly CallTransmissionExecuter<ITestInterface> _transmissionExecuter;
-
-        public CallTransmissionProtocolBasicTests()
+        public CallTransmissionBasicTests() : base(new BasicTestInterfaceImpl())
         {
-            _transmissionProtocol = new CallTransmissionProtocol<ITestInterface>
-            {
-                SendData = SendData,
-                WaitTimeout = TimeSpan.FromSeconds(5)
-            };
-            _transmissionExecuter = new CallTransmissionExecuter<ITestInterface>(new TestInterfaceImpl());
         }
 
-        private async Task SendData(MemoryStream memoryStream)
+        protected override async Task SendData(ResponseData data)
         {
             await Task.Delay(20);
-
-            var buffer = memoryStream.ToArray();
-            var result = await _transmissionExecuter.ReceiveData(buffer, 0, buffer.Length);
-            _transmissionProtocol.ReceiveData(result, 0, result.Length);
+            await base.SendData(data);
         }
 
         [Theory, InlineData(12, 31, 43), InlineData(1, 1, 2), InlineData(234321, 34223, 268544)]
         public async Task TestSumValues(int x, int y, int result)
         {
-            Assert.Equal(result, await _transmissionProtocol.Interface.SumValues(x, y));
+            Assert.Equal(result, await CallTransmissionProtocol.Interface.SumValues(x, y));
         }
 
         [Fact]
@@ -52,13 +40,13 @@ namespace CodeElements.NetworkCallTransmissionProtocol.Test
         [InlineData("this is a test", "IS", StringComparison.OrdinalIgnoreCase, 2)]
         public async Task TestIndexOf(string value, string needle, StringComparison comparison, int result)
         {
-            Assert.Equal(result, await _transmissionProtocol.Interface.IndexOf(value, needle, comparison));
+            Assert.Equal(result, await CallTransmissionProtocol.Interface.IndexOf(value, needle, comparison));
         }
 
         [Fact]
         public async Task TestCustomObject()
         {
-            var result = await _transmissionProtocol.Interface.GetEnvironmentInfo();
+            var result = await CallTransmissionProtocol.Interface.GetEnvironmentInfo();
             Assert.Equal("asd", result.Test1);
             Assert.Equal(false, result.Test2);
             Assert.Equal(3.141, result.Test3);
@@ -67,10 +55,10 @@ namespace CodeElements.NetworkCallTransmissionProtocol.Test
         [Fact]
         public async Task TestReturnAbstractClass()
         {
-            var result = await _transmissionProtocol.Interface.GetCurrentClient();
+            var result = await CallTransmissionProtocol.Interface.GetCurrentClient();
             Assert.Equal(123, result.Id);
 
-            var adminClient = Assert.IsType<AdminClient>(result);
+            var adminClient = Assert.IsAssignableFrom<AdminClient>(result);
             Assert.Equal(adminClient.Permissions, 19);
         }
 
@@ -78,29 +66,26 @@ namespace CodeElements.NetworkCallTransmissionProtocol.Test
         public async Task TestAbstractClassAsParameter()
         {
             var adminClient = new AdminClient {Id = 132};
-            var result = await _transmissionProtocol.Interface.GetNextClient(adminClient, "test123");
+            var result = await CallTransmissionProtocol.Interface.GetNextClient(adminClient, "test123");
 
             Assert.Equal(result.Id, adminClient.Id);
 
-            var userClient = Assert.IsType<UserClient>(result);
+            var userClient = Assert.IsAssignableFrom<UserClient>(result);
             Assert.Equal("test123", userClient.Username);
         }
     }
 
-    public interface ITestInterface
+    public interface IBasicTestInterface
     {
         Task<int> SumValues(int x, int y);
         Task<int> IndexOf(string value, string needle, StringComparison stringComparison);
         Task<EnvironmentInfo> GetEnvironmentInfo();
 
-        [AdditionalTypes(typeof(AdminClient), typeof(UserClient))]
         Task<Client> GetCurrentClient();
-
-        [AdditionalTypes(typeof(AdminClient), typeof(UserClient))]
-        Task<Client> GetNextClient([AdditionalTypes(typeof(AdminClient), typeof(UserClient))] Client currentClient, string username);
+        Task<Client> GetNextClient(Client currentClient, string username);
     }
 
-    public class TestInterfaceImpl : ITestInterface
+    public class BasicTestInterfaceImpl : IBasicTestInterface
     {
         public Task<int> SumValues(int x, int y)
         {
@@ -130,29 +115,44 @@ namespace CodeElements.NetworkCallTransmissionProtocol.Test
         }
     }
 
-    [Serializable]
+    [ZeroFormattable]
     public class EnvironmentInfo
     {
-        public string Test1 { get; set; }
-        public bool Test2 { get; set; }
-        public double Test3 { get; set; }
+        [Index(0)]
+        public virtual string Test1 { get; set; }
+
+        [Index(1)]
+        public virtual bool Test2 { get; set; }
+
+        [Index(2)]
+        public virtual double Test3 { get; set; }
     }
 
-    [Serializable]
+    [ZeroFormattable, Union(typeof(AdminClient), typeof(UserClient))]
     public abstract class Client
     {
-        public int Id { get; set; }
+        [UnionKey]
+        public abstract byte ClientType { get; }
+
+        [Index(0)]
+        public virtual int Id { get; set; }
     }
 
-    [Serializable]
+    [ZeroFormattable]
     public class AdminClient : Client
     {
-        public int Permissions { get; set; }
+        [Index(1)]
+        public virtual int Permissions { get; set; }
+
+        public override byte ClientType { get; } = 1;
     }
 
-    [Serializable]
+    [ZeroFormattable]
     public class UserClient : Client
     {
-        public string Username { get; set; }
+        [Index(1)]
+        public virtual string Username { get; set; }
+
+        public override byte ClientType { get; } = 2;
     }
 }
