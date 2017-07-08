@@ -1,6 +1,6 @@
 namespace CodeElements.NetworkCallTransmissionProtocol
 {
-    public struct ResponseData
+    public class ResponseData
     {
         public ResponseData(byte[] data, int length)
         {

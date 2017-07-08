@@ -35,8 +35,8 @@ namespace CodeElements.NetworkCallTransmissionProtocol
         private readonly MD5 _md5;
         private int _callIdCounter;
         private bool _isDisposed;
-
         private IReadOnlyDictionary<MethodInfo, MethodCache> _methods;
+        private const int EstimatedDataPerParameter = 200;
 
         /// <summary>
         ///     Initialize a new instance of <see cref="CallTransmissionProtocol{TInterface}" />
@@ -65,10 +65,8 @@ namespace CodeElements.NetworkCallTransmissionProtocol
 
                 _md5?.Dispose();
                 foreach (var key in _callbacks.Keys)
-                {
                     if (_callbacks.TryRemove(key, out var resultCallback))
                         resultCallback.Dispose();
-                }
             }
         }
 
@@ -88,6 +86,11 @@ namespace CodeElements.NetworkCallTransmissionProtocol
         ///     <see cref="TimeoutException" /> will be thrown in the task
         /// </summary>
         public TimeSpan WaitTimeout { get; set; } = TimeSpan.FromSeconds(30);
+
+        /// <summary>
+        ///     Reserve bytes at the beginning of the <see cref="SendData" /> buffer for custom headers
+        /// </summary>
+        public int CustomOffset { get; set; }
 
         /// <summary>
         ///     Intercepts an asynchronous method <paramref name="invocation" /> with return type of
@@ -145,7 +148,8 @@ namespace CodeElements.NetworkCallTransmissionProtocol
                 else
                     throw new ArgumentException("Only tasks are supported as return type.", methodInfo.ToString());
 
-                var methodCache = new MethodCache(methodInfo.GetMethodId(_md5), actualReturnType, methodInfo.GetParameters().Select(x => x.ParameterType).ToArray());
+                var methodCache = new MethodCache(methodInfo.GetMethodId(_md5), actualReturnType,
+                    methodInfo.GetParameters().Select(x => x.ParameterType).ToArray());
                 dictionary.Add(methodInfo, methodCache);
             }
 
@@ -190,29 +194,33 @@ namespace CodeElements.NetworkCallTransmissionProtocol
 
             var callbackId = (uint) Interlocked.Increment(ref _callIdCounter);
 
-            var buffer = new byte[4 /* Header */ + 4 /* Callback id */ + 16 /* method id */ + parameters.Length * 4 /* parameter meta */ + 200 * parameters.Length /* parameter data */];
-            var bufferOffset = 24 + parameters.Length * 4;
+            var buffer = new byte[CustomOffset /* user offset */ + 4 /* Header */ + 4 /* Callback id */ +
+                                  16 /* method id */ +
+                                  parameters.Length * 4 /* parameter meta */ +
+                                  EstimatedDataPerParameter * parameters.Length /* parameter data */];
+            var bufferOffset = CustomOffset + 24 + parameters.Length * 4;
 
-            for (int i = 0; i < parameters.Length; i++)
+            for (var i = 0; i < parameters.Length; i++)
             {
-                var metaOffset = 24 + i * 4;
-                var parameterLength = ZeroFormatterSerializer.NonGeneric.Serialize(methodCache.ParameterTypes[i],ref buffer, bufferOffset, parameters[i]);
+                var metaOffset = CustomOffset + 24 + i * 4;
+                var parameterLength = ZeroFormatterSerializer.NonGeneric.Serialize(methodCache.ParameterTypes[i],
+                    ref buffer, bufferOffset, parameters[i]);
                 Buffer.BlockCopy(BitConverter.GetBytes(parameterLength), 0, buffer, metaOffset, 4);
 
                 bufferOffset += parameterLength;
             }
 
             //write header
-            buffer[0] = ProtocolInfo.Header1;
-            buffer[1] = ProtocolInfo.Header2;
-            buffer[2] = ProtocolInfo.Header3Call;
-            buffer[3] = ProtocolInfo.Header4;
+            buffer[CustomOffset] = ProtocolInfo.Header1;
+            buffer[CustomOffset + 1] = ProtocolInfo.Header2;
+            buffer[CustomOffset + 2] = ProtocolInfo.Header3Call;
+            buffer[CustomOffset + 3] = ProtocolInfo.Header4;
 
             //write callback id
-            Buffer.BlockCopy(BitConverter.GetBytes(callbackId), 0, buffer, 4, 4);
+            Buffer.BlockCopy(BitConverter.GetBytes(callbackId), 0, buffer, CustomOffset + 4, 4);
 
             //method identifier
-            Buffer.BlockCopy(methodCache.MethodId, 0, buffer, 8, 16);
+            Buffer.BlockCopy(methodCache.MethodId, 0, buffer, CustomOffset + 8, 16);
 
             var callback = new ResultCallback();
             var callbackWait = callback.Wait(WaitTimeout);
@@ -225,7 +233,7 @@ namespace CodeElements.NetworkCallTransmissionProtocol
             {
                 if (!await callbackWait)
                 {
-                    _callbacks.TryRemove(callbackId, out var value);
+                    _callbacks.TryRemove(callbackId, out var _);
                     throw new TimeoutException("The method call timed out, no response received.");
                 }
 
