@@ -14,6 +14,7 @@ namespace CodeElements.NetworkCallTransmissionProtocol
     public class CallTransmissionExecuter<TInterface>
     {
         private readonly TInterface _interfaceImplementation;
+        private const int EstimatedResultBufferSize = 1000;
 
         /// <summary>
         ///     Initialize a new instance of <see cref="CallTransmissionExecuter{TInterface}" />
@@ -40,6 +41,11 @@ namespace CodeElements.NetworkCallTransmissionProtocol
         ///     the initialization time.
         /// </summary>
         public ExecuterInterfaceCache Cache { get; }
+
+        /// <summary>
+        ///     Reserve bytes at the beginning of the response buffer for custom headers
+        /// </summary>
+        public int CustomOffset { get; set; }
 
         /// <summary>
         ///     Called when data was received by the client side
@@ -76,19 +82,19 @@ namespace CodeElements.NetworkCallTransmissionProtocol
 
             void WriteResponseHeader(byte[] data)
             {
-                data[0] = ProtocolInfo.Header1;
-                data[1] = ProtocolInfo.Header2;
-                data[2] = ProtocolInfo.Header3Return;
-                data[3] = ProtocolInfo.Header4;
-                Buffer.BlockCopy(buffer, 4, data, 4, 4);
+                data[CustomOffset] = ProtocolInfo.Header1;
+                data[CustomOffset + 1] = ProtocolInfo.Header2;
+                data[CustomOffset + 2] = ProtocolInfo.Header3Return;
+                data[CustomOffset + 3] = ProtocolInfo.Header4;
+                Buffer.BlockCopy(buffer, 4, data, CustomOffset + 4, 4);
             }
 
             //method not found/implemented
             if (!Cache.MethodInvokers.TryGetValue(id, out var methodInvoker))
             {
-                var response = new byte[8 /* Header */ + 1 /* response type */];
+                var response = new byte[CustomOffset /* user offset */ + 8 /* Header */ + 1 /* response type */];
                 WriteResponseHeader(response);
-                response[8] = (byte) ResponseType.MethodNotImplemented;
+                response[CustomOffset + 8] = (byte) ResponseType.MethodNotImplemented;
                 return new ResponseData(response);
             }
 
@@ -113,10 +119,10 @@ namespace CodeElements.NetworkCallTransmissionProtocol
             catch (Exception e)
             {
                 var data = ExceptionSerializer.Serialize(e);
-                var response = new byte[8 /* Header */ + 1 /* response type */ + data.Length /* exception */];
+                var response = new byte[CustomOffset /* user offset */ + 8 /* Header */ + 1 /* response type */ + data.Length /* exception */];
                 WriteResponseHeader(response);
-                response[8] = (byte) ResponseType.Exception;
-                Buffer.BlockCopy(data, 0, response, 9, data.Length);
+                response[CustomOffset + 8] = (byte) ResponseType.Exception;
+                Buffer.BlockCopy(data, 0, response, CustomOffset + 9, data.Length);
                 return new ResponseData(response);
             }
 
@@ -124,19 +130,19 @@ namespace CodeElements.NetworkCallTransmissionProtocol
             {
                 var result = methodInvoker.TaskReturnPropertyInfo.GetValue(task);
 
-                var response = new byte[1000];
+                var response = new byte[CustomOffset + EstimatedResultBufferSize];
                 WriteResponseHeader(response);
-                response[8] = (byte) ResponseType.ResultReturned;
+                response[CustomOffset + 8] = (byte) ResponseType.ResultReturned;
 
                 var responseLength =
-                    ZeroFormatterSerializer.NonGeneric.Serialize(methodInvoker.ReturnType, ref response, 9, result);
+                    ZeroFormatterSerializer.NonGeneric.Serialize(methodInvoker.ReturnType, ref response, CustomOffset + 9, result);
                 return new ResponseData(response, responseLength);
             }
             else
             {
-                var response = new byte[8 /* Header */ + 1 /* response type */];
+                var response = new byte[CustomOffset /* user offset */ + 8 /* Header */ + 1 /* response type */];
                 WriteResponseHeader(response);
-                response[8] = (byte) ResponseType.MethodExecuted;
+                response[CustomOffset + 8] = (byte) ResponseType.MethodExecuted;
                 return new ResponseData(response);
             }
         }
