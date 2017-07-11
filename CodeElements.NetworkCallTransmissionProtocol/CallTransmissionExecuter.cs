@@ -136,7 +136,7 @@ namespace CodeElements.NetworkCallTransmissionProtocol
 
                 var responseLength =
                     ZeroFormatterSerializer.NonGeneric.Serialize(methodInvoker.ReturnType, ref response, CustomOffset + 9, result);
-                return new ResponseData(response, responseLength);
+                return new ResponseData(response, responseLength + CustomOffset + 9);
             }
             else
             {

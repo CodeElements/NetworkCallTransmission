@@ -19,8 +19,8 @@ namespace CodeElements.NetworkCallTransmissionProtocol.Proxy
 
 		public DefaultMethodEmitter()
 		{
-			_getMethods = typeof(IProxy).GetProperty(nameof(IProxy.Methods)).GetGetMethod();
-			_getInterceptor = typeof(IProxy).GetProperty(nameof(IProxy.Interceptor)).GetGetMethod();
+			_getMethods = typeof(IAsyncInterceptorProxy).GetProperty(nameof(IAsyncInterceptorProxy.Methods)).GetGetMethod();
+			_getInterceptor = typeof(IAsyncInterceptorProxy).GetProperty(nameof(IAsyncInterceptorProxy.Interceptor)).GetGetMethod();
 			_invocationReturn = typeof(InvocationInfo).GetProperty(nameof(InvocationInfo.ReturnValue)).GetGetMethod();
 
 			var asyncInterceptorMethods = typeof(IAsyncInterceptor).GetMethods();

@@ -9,33 +9,47 @@ namespace CodeElements.NetworkCallTransmissionProtocol.Proxy
 	{
 		private static readonly ConstructorInfo BaseConstructor = typeof(object).GetConstructor(new Type[0]);
 
-		public static T CreateProxy<T>(IAsyncInterceptor asyncInterceptor)
-		{
-			var interfaceType = typeof(T);
+	    public static T CreateProxy<T>(IEventInterceptor eventInterceptor)
+	    {
+	        var typeBuilder = BuildTypeFromInterface(typeof(T), out var interfaceList);
 
-			var currentDomain = AppDomain.CurrentDomain;
-			var typeName = $"{typeof(T).Name}Proxy";
-			var assemblyName = $"{typeName}Assembly";
-			var moduleName = $"{typeName}Module";
+            var eventInterceptorImplementor = new EventInterceptorImplementor();
+            eventInterceptorImplementor.ImplementProxy(typeBuilder);
 
-			var name = new AssemblyName(assemblyName);
+	        var events = GetEvents(interfaceList);
 
-		    var access = AssemblyBuilderAccess.Run;
-            var assemblyBuilder = currentDomain.DefineDynamicAssembly(name, access);
-		    var moduleBuilder = assemblyBuilder.DefineDynamicModule(moduleName);
-            var typeAttributes = TypeAttributes.AutoClass | TypeAttributes.Class |
-			                                TypeAttributes.Public;
+            var builder = new ProxyEventBuilder();
+	        for (var index = 0; index < events.Count; index++)
+	        {
+	            var eventInfo = events[index];
+	            builder.CreateEvent(index, typeof(T), eventInterceptorImplementor.InterceptorField, eventInfo,
+	                typeBuilder);
+	        }
 
-			var interfaceList = new List<Type> {interfaceType};
-			BuildInterfaceList(interfaceType, interfaceList);
+	        // ReSharper disable once PossibleNullReferenceException
+	        var getInterceptor = typeof(IEventInterceptorProxy)
+	            .GetProperty(nameof(IEventInterceptorProxy.Interceptor)).GetGetMethod();
+	        var disposeProxy = typeof(IEventInterceptor).GetMethod(nameof(IEventInterceptor.Dispose));
 
-			var typeBuilder =
-				moduleBuilder.DefineType(typeName, typeAttributes, typeof(object), interfaceList.ToArray());
+            DisposeProxyBuilder.BuildProxy(typeBuilder, getInterceptor, disposeProxy);
 
-			DefineConstructor(typeBuilder);
+	        var proxyType = typeBuilder.CreateType();
+            
+	        var result = (T) Activator.CreateInstance(proxyType);
 
-			//Implement IProxy
-			var implementor = new InterceptorImplementor();
+	        var proxy = (IEventInterceptorProxy) result;
+	        proxy.Interceptor = eventInterceptor;
+	        proxy.Events = events.ToArray();
+
+	        return result;
+        }
+
+        public static T CreateProxy<T>(IAsyncInterceptor asyncInterceptor)
+        {
+            var typeBuilder = BuildTypeFromInterface(typeof(T), out var interfaceList);
+
+            //Implement IAsyncInterceptorProxy
+            var implementor = new AsyncInterceptorImplementor();
 			implementor.ImplementProxy(typeBuilder);
 
 			var methods = GetMethods(interfaceList);
@@ -49,12 +63,38 @@ namespace CodeElements.NetworkCallTransmissionProtocol.Proxy
 			var proxyType = typeBuilder.CreateType();
 			var result = (T) Activator.CreateInstance(proxyType);
 
-			var proxy = (IProxy) result;
+			var proxy = (IAsyncInterceptorProxy) result;
 			proxy.Interceptor = asyncInterceptor;
 			proxy.Methods = methods.ToArray();
 
 			return result;
 		}
+
+        private static TypeBuilder BuildTypeFromInterface(Type interfaceType, out List<Type> interfaceList)
+	    {
+	        var currentDomain = AppDomain.CurrentDomain;
+	        var typeName = $"{interfaceType.Name}Proxy";
+	        var assemblyName = $"{typeName}Assembly";
+	        var moduleName = $"{typeName}Module";
+
+	        var name = new AssemblyName(assemblyName);
+
+	        var access = AssemblyBuilderAccess.RunAndSave;
+	        var assemblyBuilder = currentDomain.DefineDynamicAssembly(name, access);
+	        var moduleBuilder = assemblyBuilder.DefineDynamicModule(moduleName, "test.module");
+	        var typeAttributes = TypeAttributes.AutoClass | TypeAttributes.Class |
+	                             TypeAttributes.Public;
+
+	        interfaceList = new List<Type> {interfaceType};
+	        BuildInterfaceList(interfaceType, interfaceList);
+
+	        var typeBuilder =
+	            moduleBuilder.DefineType(typeName, typeAttributes, typeof(object), interfaceList.ToArray());
+
+	        DefineConstructor(typeBuilder);
+
+	        return typeBuilder;
+	    }
 
 		private static void BuildInterfaceList(Type currentType, ICollection<Type> interfaceTypes)
 		{
@@ -85,6 +125,22 @@ namespace CodeElements.NetworkCallTransmissionProtocol.Proxy
 
 			return methods;
 		}
+
+	    private static List<EventInfo> GetEvents(IEnumerable<Type> interfaceList)
+	    {
+            var events = new List<EventInfo>();
+
+	        foreach (var interfaceType in interfaceList)
+	        {
+	            foreach (var eventInfo in interfaceType.GetEvents())
+	            {
+	                if (!events.Contains(eventInfo))
+	                    events.Add(eventInfo);
+	            }
+	        }
+
+	        return events;
+	    }
 
 		private static void DefineConstructor(TypeBuilder typeBuilder)
 		{

@@ -63,6 +63,7 @@
     <Compile Include="MethodInvokerTests.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="ProxyFactoryTests.cs" />
+    <Compile Include="Proxy\ProxyFactoryTests.cs" />
     <Compile Include="ResultCallbackTests.cs" />
     <Compile Include="StaticRandom.cs" />
   </ItemGroup>
@@ -75,6 +76,9 @@
       <Project>{5c137813-e973-4ed6-857c-5f4172f08528}</Project>
       <Name>CodeElements.NetworkCallTransmissionProtocol</Name>
     </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <Analyzer Include="..\packages\xunit.analyzers.0.5.0\analyzers\dotnet\cs\xunit.analyzers.dll" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

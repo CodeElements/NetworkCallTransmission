@@ -4,7 +4,7 @@ using System.Reflection.Emit;
 
 namespace CodeElements.NetworkCallTransmissionProtocol.Proxy
 {
-	internal class ProxyMethodBuilder : IProxyMethodBuilder
+	internal class ProxyMethodBuilder
 	{
 		public ProxyMethodBuilder()
 		{

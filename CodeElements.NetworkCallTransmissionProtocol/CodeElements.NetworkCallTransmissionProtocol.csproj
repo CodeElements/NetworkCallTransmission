@@ -51,15 +51,21 @@
   <ItemGroup>
     <Compile Include="CallTransmissionExecuter.cs" />
     <Compile Include="CallTransmissionProtocol.cs" />
+    <Compile Include="EventManager.cs" />
     <Compile Include="Exceptions\ExceptionSerializer.cs" />
     <Compile Include="Proxy\DefaultMethodEmitter.cs" />
+    <Compile Include="Proxy\DisposeProxyBuilder.cs" />
+    <Compile Include="Proxy\EventInterceptorImplementor.cs" />
     <Compile Include="Proxy\IAsyncInterceptor.cs" />
+    <Compile Include="Proxy\IEventInterceptor.cs" />
+    <Compile Include="Proxy\IEventInterceptorProxy.cs" />
     <Compile Include="Proxy\IInvocation.cs" />
     <Compile Include="Proxy\IMethodBodyEmitter.cs" />
-    <Compile Include="Proxy\InterceptorImplementor.cs" />
+    <Compile Include="Proxy\AsyncInterceptorImplementor.cs" />
+    <Compile Include="Proxy\ImplementorHelper.cs" />
     <Compile Include="Proxy\InvocationInfo.cs" />
-    <Compile Include="Proxy\IProxy.cs" />
-    <Compile Include="Proxy\IProxyMethodBuilder.cs" />
+    <Compile Include="Proxy\IAsyncInterceptorProxy.cs" />
+    <Compile Include="Proxy\ProxyEventBuilder.cs" />
     <Compile Include="Proxy\ProxyFactory.cs" />
     <Compile Include="Proxy\ProxyMethodBuilder.cs" />
     <Compile Include="ExecuterInterfaceCache.cs" />
