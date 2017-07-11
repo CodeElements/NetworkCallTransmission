@@ -4,7 +4,7 @@ using System.Threading.Tasks;
 using CodeElements.NetworkCallTransmissionProtocol.Internal;
 using Xunit;
 
-namespace CodeElements.NetworkCallTransmissionProtocol.Test
+namespace CodeElements.NetworkCallTransmissionProtocol.Test.Internal
 {
     public class MethodInvokerTests
     {

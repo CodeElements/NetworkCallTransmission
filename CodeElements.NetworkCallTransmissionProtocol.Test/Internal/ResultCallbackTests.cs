@@ -1,25 +1,18 @@
 ﻿using System;
-using System.IO;
 using System.Threading.Tasks;
 using CodeElements.NetworkCallTransmissionProtocol.Internal;
 using Xunit;
 
-namespace CodeElements.NetworkCallTransmissionProtocol.Test
+namespace CodeElements.NetworkCallTransmissionProtocol.Test.Internal
 {
     public class ResultCallbackTests
     {
         [Fact]
-        public void TestDisposeAfterCreating()
+        public async Task TestAwaitTimeoutAndReceivedResult()
         {
             var x = new ResultCallback();
-            x.Dispose();
-        }
-
-        [Fact]
-        public async Task TestWaitTimeout()
-        {
-            var x = new ResultCallback();
-           Assert.False(await x.Wait(TimeSpan.FromMilliseconds(200)));
+            Assert.False(await x.Wait(TimeSpan.FromMilliseconds(100)));
+            x.ReceivedResult(ResponseType.Exception, null, 0); //no exception
         }
 
         [Fact]
@@ -39,11 +32,10 @@ namespace CodeElements.NetworkCallTransmissionProtocol.Test
         }
 
         [Fact]
-        public async Task TestAwaitTimeoutAndReceivedResult()
+        public void TestDisposeAfterCreating()
         {
             var x = new ResultCallback();
-            Assert.False(await x.Wait(TimeSpan.FromMilliseconds(100)));
-            x.ReceivedResult(ResponseType.Exception, null, 0); //no exception
+            x.Dispose();
         }
 
         [Fact]
@@ -53,6 +45,13 @@ namespace CodeElements.NetworkCallTransmissionProtocol.Test
             Assert.False(await x.Wait(TimeSpan.FromMilliseconds(50)));
             x.Dispose();
             x.ReceivedResult(ResponseType.MethodExecuted, null, 0);
+        }
+
+        [Fact]
+        public async Task TestWaitTimeout()
+        {
+            var x = new ResultCallback();
+            Assert.False(await x.Wait(TimeSpan.FromMilliseconds(200)));
         }
     }
 }

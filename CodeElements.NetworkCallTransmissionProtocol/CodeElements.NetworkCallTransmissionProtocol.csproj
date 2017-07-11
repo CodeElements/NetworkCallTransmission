@@ -53,6 +53,7 @@
     <Compile Include="CallTransmissionProtocol.cs" />
     <Compile Include="EventManager.cs" />
     <Compile Include="Exceptions\ExceptionSerializer.cs" />
+    <Compile Include="Extensions\MurmurHash.cs" />
     <Compile Include="Proxy\DefaultMethodEmitter.cs" />
     <Compile Include="Proxy\DisposeProxyBuilder.cs" />
     <Compile Include="Proxy\EventInterceptorImplementor.cs" />
@@ -70,7 +71,7 @@
     <Compile Include="Proxy\ProxyMethodBuilder.cs" />
     <Compile Include="ExecuterInterfaceCache.cs" />
     <Compile Include="Extensions\LinqExtensions.cs" />
-    <Compile Include="Extensions\MethodInfoExtensions.cs" />
+    <Compile Include="Extensions\ReflectionIdExtensions.cs" />
     <Compile Include="Extensions\TaskExtensions.cs" />
     <Compile Include="Extensions\TypeArrayEqualityComparer.cs" />
     <Compile Include="Internal\MethodCache.cs" />

@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Text;
 using System.Threading.Tasks;
 using CodeElements.NetworkCallTransmissionProtocol.Exceptions;
 using CodeElements.NetworkCallTransmissionProtocol.Internal;
@@ -60,7 +59,7 @@ namespace CodeElements.NetworkCallTransmissionProtocol
             //CALL:
             //HEAD      - 4 bytes                   - Identifier, ASCII (NTC1)
             //HEAD      - integer                   - callback identifier
-            //HEAD      - 16 bytes                  - The method identifier
+            //HEAD      - uinteger                  - The method identifier
             //HEAD      - integer * parameters      - the length of each parameter
             //--------------------------------------------------------------------------
             //DATA      - length of the parameters  - serialized parameters
@@ -78,7 +77,7 @@ namespace CodeElements.NetworkCallTransmissionProtocol
             if (buffer[offset++] != 1)
                 throw new NotSupportedException($"The version {buffer[offset - 1]} is not supported.");
 
-            var id = Encoding.ASCII.GetString(buffer, offset + 4, 16); //16 bytes
+            var id = BitConverter.ToUInt32(buffer, offset + 4);
 
             void WriteResponseHeader(byte[] data)
             {
@@ -86,7 +85,7 @@ namespace CodeElements.NetworkCallTransmissionProtocol
                 data[CustomOffset + 1] = ProtocolInfo.Header2;
                 data[CustomOffset + 2] = ProtocolInfo.Header3Return;
                 data[CustomOffset + 3] = ProtocolInfo.Header4;
-                Buffer.BlockCopy(buffer, 4, data, CustomOffset + 4, 4);
+                Buffer.BlockCopy(buffer, 4, data, CustomOffset + 4, 4); //copy callback id
             }
 
             //method not found/implemented
@@ -99,12 +98,12 @@ namespace CodeElements.NetworkCallTransmissionProtocol
             }
 
             var parameters = new object[methodInvoker.ParameterCount];
-            var parameterOffset = 24 + parameters.Length * 4;
+            var parameterOffset = offset + 8 + parameters.Length * 4;
 
             for (int i = 0; i < methodInvoker.ParameterCount; i++)
             {
                 var type = methodInvoker.ParameterTypes[i];
-                var parameterLength = BitConverter.ToInt32(buffer, offset + 20 + i * 4);
+                var parameterLength = BitConverter.ToInt32(buffer, offset + 8 + i * 4);
 
                 parameters[i] = ZeroFormatterSerializer.NonGeneric.Deserialize(type, buffer, parameterOffset);
                 parameterOffset += parameterLength;

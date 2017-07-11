@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Reflection;
 using CodeElements.NetworkCallTransmissionProtocol.Proxy;
 
@@ -6,6 +7,13 @@ namespace CodeElements.NetworkCallTransmissionProtocol
 {
     public class EventManager
     {
+        private readonly ConcurrentDictionary<string, int> _methodCalls;
+
+        public EventManager()
+        {
+
+        }
+
         public TEventInterface GetEvents<TEventInterface>(Guid guid) where TEventInterface : IDisposable
         {
             var interceptor = new EventInterceptor(guid, typeof(TEventInterface));
@@ -44,6 +52,11 @@ namespace CodeElements.NetworkCallTransmissionProtocol
 
     public class EventProvider
     {
+        public void SubscribeEvent()
+        {
+
+        }
+
         public void RegisterEvents<TEventInterface>(TEventInterface eventInterface)
         {
 

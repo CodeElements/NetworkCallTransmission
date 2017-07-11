@@ -148,7 +148,7 @@ namespace CodeElements.NetworkCallTransmissionProtocol
                 else
                     throw new ArgumentException("Only tasks are supported as return type.", methodInfo.ToString());
 
-                var methodCache = new MethodCache(methodInfo.GetMethodId(_md5), actualReturnType,
+                var methodCache = new MethodCache(methodInfo.GetMethodId(), actualReturnType,
                     methodInfo.GetParameters().Select(x => x.ParameterType).ToArray());
                 dictionary.Add(methodInfo, methodCache);
             }
@@ -187,7 +187,7 @@ namespace CodeElements.NetworkCallTransmissionProtocol
             //CALL:
             //HEAD      - 4 bytes                   - Identifier, ASCII (NTC1)
             //HEAD      - integer                   - callback identifier
-            //HEAD      - 16 bytes                  - The method identifier
+            //HEAD      - uinteger                  - The method identifier
             //HEAD      - integer * parameters      - the length of each parameter
             //--------------------------------------------------------------------------
             //DATA      - length of the parameters  - serialized parameters
@@ -195,14 +195,13 @@ namespace CodeElements.NetworkCallTransmissionProtocol
             var callbackId = (uint) Interlocked.Increment(ref _callIdCounter);
 
             var buffer = new byte[CustomOffset /* user offset */ + 4 /* Header */ + 4 /* Callback id */ +
-                                  16 /* method id */ +
-                                  parameters.Length * 4 /* parameter meta */ +
+                                  4 /* method id */ +  parameters.Length * 4 /* parameter meta */ +
                                   EstimatedDataPerParameter * parameters.Length /* parameter data */];
             var bufferOffset = CustomOffset + 24 + parameters.Length * 4;
 
             for (var i = 0; i < parameters.Length; i++)
             {
-                var metaOffset = CustomOffset + 24 + i * 4;
+                var metaOffset = CustomOffset + 12 + i * 4;
                 var parameterLength = ZeroFormatterSerializer.NonGeneric.Serialize(methodCache.ParameterTypes[i],
                     ref buffer, bufferOffset, parameters[i]);
                 Buffer.BlockCopy(BitConverter.GetBytes(parameterLength), 0, buffer, metaOffset, 4);
@@ -220,7 +219,7 @@ namespace CodeElements.NetworkCallTransmissionProtocol
             Buffer.BlockCopy(BitConverter.GetBytes(callbackId), 0, buffer, CustomOffset + 4, 4);
 
             //method identifier
-            Buffer.BlockCopy(methodCache.MethodId, 0, buffer, CustomOffset + 8, 16);
+            Buffer.BlockCopy(BitConverter.GetBytes(methodCache.MethodId), 0, buffer, CustomOffset + 8, 4);
 
             var callback = new ResultCallback();
             var callbackWait = callback.Wait(WaitTimeout);

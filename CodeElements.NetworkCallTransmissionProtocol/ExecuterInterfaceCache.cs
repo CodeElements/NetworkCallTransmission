@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Security.Cryptography;
-using System.Text;
 using System.Threading.Tasks;
 using CodeElements.NetworkCallTransmissionProtocol.Extensions;
 using CodeElements.NetworkCallTransmissionProtocol.Internal;
@@ -15,12 +14,12 @@ namespace CodeElements.NetworkCallTransmissionProtocol
     /// </summary>
     public class ExecuterInterfaceCache
     {
-        private ExecuterInterfaceCache(IReadOnlyDictionary<string, MethodInvoker> methodInvokers)
+        private ExecuterInterfaceCache(IReadOnlyDictionary<uint, MethodInvoker> methodInvokers)
         {
             MethodInvokers = methodInvokers;
         }
 
-        internal IReadOnlyDictionary<string, MethodInvoker> MethodInvokers { get; }
+        internal IReadOnlyDictionary<uint, MethodInvoker> MethodInvokers { get; }
 
         public static ExecuterInterfaceCache Build<TInterface>()
         {
@@ -33,7 +32,7 @@ namespace CodeElements.NetworkCallTransmissionProtocol
             if (methods.Count == 0)
                 throw new ArgumentException("The interface must at least provide one method.", nameof(TInterface));
 
-            var methodInvokers = new Dictionary<string, MethodInvoker>();
+            var methodInvokers = new Dictionary<uint, MethodInvoker>();
             var md5 = MD5.Create();
 
             foreach (var methodInfo in methods)
@@ -48,7 +47,7 @@ namespace CodeElements.NetworkCallTransmissionProtocol
                     throw new ArgumentException("Only tasks are supported as return type.", methodInfo.ToString());
 
                 var parameterTypes = methodInfo.GetParameters().Select(x => x.ParameterType).ToArray();
-                methodInvokers.Add(Encoding.ASCII.GetString(methodInfo.GetMethodId(md5)),
+                methodInvokers.Add(methodInfo.GetMethodId(),
                     new MethodInvoker(methodInfo, parameterTypes, actualReturnType));
             }
 
