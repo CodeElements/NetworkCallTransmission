@@ -54,9 +54,11 @@
     <Compile Include="EventManager.cs" />
     <Compile Include="Exceptions\ExceptionSerializer.cs" />
     <Compile Include="Extensions\MurmurHash.cs" />
+    <Compile Include="IEventProvider.cs" />
     <Compile Include="Proxy\DefaultMethodEmitter.cs" />
     <Compile Include="Proxy\DisposeProxyBuilder.cs" />
     <Compile Include="Proxy\EventInterceptorImplementor.cs" />
+    <Compile Include="Proxy\EventProviderImplementor.cs" />
     <Compile Include="Proxy\IAsyncInterceptor.cs" />
     <Compile Include="Proxy\IEventInterceptor.cs" />
     <Compile Include="Proxy\IEventInterceptorProxy.cs" />

@@ -6,6 +6,12 @@ namespace CodeElements.NetworkCallTransmissionProtocol.Proxy
     {
         void EventSubscribed(EventInfo eventInfo);
         void EventUnsubscribed(EventInfo eventInfo);
+
+        //IEventProvider
+        void SuspendSubscribing();
+        void ResumeSubscribing();
+
+        //IDisponsable
         void Dispose();
     }
 }

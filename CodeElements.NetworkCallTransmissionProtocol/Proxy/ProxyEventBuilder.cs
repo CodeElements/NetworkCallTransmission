@@ -63,8 +63,20 @@ namespace CodeElements.NetworkCallTransmissionProtocol.Proxy
                 new[] {typeof(object)});
 
             var il = raiseMethod.GetILGenerator();
+            var notNullLabel = il.DefineLabel();
+            var returnLabel = il.DefineLabel();
+
             il.Emit(OpCodes.Ldarg_0);
             il.Emit(OpCodes.Ldfld, eventField);
+            il.Emit(OpCodes.Dup);
+            il.Emit(OpCodes.Brtrue_S, notNullLabel);
+
+            //if the value is null
+            il.Emit(OpCodes.Pop);
+            il.Emit(OpCodes.Br_S, returnLabel);
+
+            //if the value is not null
+            il.MarkLabel(notNullLabel);
             il.Emit(OpCodes.Ldarg_0);
             il.Emit(OpCodes.Ldarg_1);
             if (eventInfo.EventHandlerType.IsGenericType)
@@ -73,16 +85,15 @@ namespace CodeElements.NetworkCallTransmissionProtocol.Proxy
                 il.Emit(OpCodes.Castclass, argumentType);
             }
             il.Emit(OpCodes.Callvirt, eventInfo.EventHandlerType.GetMethod(nameof(EventHandler.Invoke)));
+
+            il.MarkLabel(returnLabel);
             il.Emit(OpCodes.Ret);
         }
 
         private void EmitEventMethodBody(MethodBuilder methodBuilder, int eventIndex, EventInfo eventInfo, FieldBuilder eventField, bool remove)
         {
-            MethodInfo action;
-            if (remove)
-                action = typeof(Delegate).GetMethod(nameof(Delegate.Combine), new[] { typeof(Delegate), typeof(Delegate) });
-            else
-                action = typeof(Delegate).GetMethod(nameof(Delegate.Remove), new[] { typeof(Delegate), typeof(Delegate) });
+            var action = typeof(Delegate).GetMethod(remove ? nameof(Delegate.Remove) : nameof(Delegate.Combine),
+                new[] {typeof(Delegate), typeof(Delegate)});
 
             var compareExchange = typeof(Interlocked).GetMethods()
                 .First(x => x.IsGenericMethod && x.Name == nameof(Interlocked.CompareExchange))
@@ -95,7 +106,6 @@ namespace CodeElements.NetworkCallTransmissionProtocol.Proxy
             il.DeclareLocal(eventInfo.EventHandlerType);
             il.DeclareLocal(eventInfo.EventHandlerType);
             il.DeclareLocal(eventInfo.EventHandlerType);
-            //il.DeclareLocal(typeof(IEventInterceptor));
 
             Label loop = il.DefineLabel();
 

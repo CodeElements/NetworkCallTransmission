@@ -84,6 +84,14 @@ namespace CodeElements.NetworkCallTransmissionProtocol.Test.Proxy
                 Unsubscribed = true;
             }
 
+            public void SuspendSubscribing()
+            {
+            }
+
+            public void ResumeSubscribing()
+            {
+            }
+
             public void Dispose()
             {
                 Disposed = true;
@@ -111,7 +119,7 @@ namespace CodeElements.NetworkCallTransmissionProtocol.Test.Proxy
         Task Test();
     }
 
-    public interface IEventTestInterface : IDisposable
+    public interface IEventTestInterface : IEventProvider
     {
         event EventHandler TestEvent;
         event ResolveEventHandler TestEvent2;
