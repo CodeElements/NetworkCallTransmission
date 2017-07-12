@@ -101,7 +101,7 @@ namespace CodeElements.NetworkCallTransmissionProtocol
             var methodCache = _methods[invocation.MethodInfo];
             invocation.ReturnValue = Task.Run(async () =>
             {
-                var result = await SendMethodCall(methodCache, invocation.Arguments);
+                var result = await SendMethodCall(methodCache, invocation.Arguments).ConfigureAwait(false);
                 return (TResult) result;
             });
         }
@@ -214,7 +214,7 @@ namespace CodeElements.NetworkCallTransmissionProtocol
 
             using (callback)
             {
-                if (!await callbackWait)
+                if (!await callbackWait.ConfigureAwait(false))
                 {
                     _callbacks.TryRemove(callbackId, out var _);
                     throw new TimeoutException("The method call timed out, no response received.");

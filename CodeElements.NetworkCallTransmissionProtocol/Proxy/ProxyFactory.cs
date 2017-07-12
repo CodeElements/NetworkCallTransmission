@@ -9,7 +9,7 @@ namespace CodeElements.NetworkCallTransmissionProtocol.Proxy
 	{
 		private static readonly ConstructorInfo BaseConstructor = typeof(object).GetConstructor(new Type[0]);
 
-	    public static T CreateProxy<T>(IEventInterceptor eventInterceptor) where T : IEventProvider
+	    public static T CreateProxy<T>(IEventInterceptor eventInterceptor)
         {
 	        var typeBuilder = BuildTypeFromInterface(typeof(T), out var interfaceList, out var assemblyBuilder);
 
@@ -26,7 +26,7 @@ namespace CodeElements.NetworkCallTransmissionProtocol.Proxy
 	                typeBuilder);
 	        }
 
-            EventProviderImplementor.Implement(typeBuilder);
+            //EventProviderImplementor.Implement(typeBuilder);
 
 	        var proxyType = typeBuilder.CreateType();
             assemblyBuilder.Save("test.dll");

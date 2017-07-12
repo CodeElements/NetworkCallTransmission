@@ -51,9 +51,8 @@ namespace CodeElements.NetworkCallTransmissionProtocol
         /// </summary>
         /// <param name="buffer">The array of unsigned bytes which contains the information to execute the method.</param>
         /// <param name="offset">The index into buffer at which the data begins</param>
-        /// <param name="length">The length of the data in bytes.</param>
         /// <returns>Returns the answer which should be sent back to the client</returns>
-        public async Task<ResponseData> ReceiveData(byte[] buffer, int offset, int length)
+        public async Task<ResponseData> ReceiveData(byte[] buffer, int offset)
         {
             //PROTOCOL
             //CALL:
@@ -113,7 +112,7 @@ namespace CodeElements.NetworkCallTransmissionProtocol
             try
             {
                 task = methodInvoker.Invoke(_interfaceImplementation, parameters);
-                await task;
+                await task.ConfigureAwait(false);
             }
             catch (Exception e)
             {

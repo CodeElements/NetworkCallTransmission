@@ -9,6 +9,7 @@
 
     public enum EventResponseType
     {
-        TriggerEvent
+        TriggerEvent,
+        TriggerEventWithParameter
     }
 }
