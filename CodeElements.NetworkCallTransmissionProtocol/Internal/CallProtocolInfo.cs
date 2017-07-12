@@ -1,6 +1,6 @@
 ﻿namespace CodeElements.NetworkCallTransmissionProtocol.Internal
 {
-    internal static class ProtocolInfo
+    internal static class CallProtocolInfo
     {
         public const byte Header1 = 0x4D; //Letter N (Network)
         public const byte Header2 = 0x54; //Letter T (Transmission)

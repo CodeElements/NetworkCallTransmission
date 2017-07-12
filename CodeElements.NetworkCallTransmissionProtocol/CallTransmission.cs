@@ -19,7 +19,7 @@ namespace CodeElements.NetworkCallTransmissionProtocol
     ///     The client side of the network protocol. Provides the class which mapps the interface methods to the remote methods
     /// </summary>
     /// <typeparam name="TInterface">The remote interface. The receiving site must have the same interface available.</typeparam>
-    public class CallTransmissionProtocol<TInterface> : DataTransmitter, IDisposable, IAsyncInterceptor
+    public class CallTransmission<TInterface> : DataTransmitter, IDisposable, IAsyncInterceptor
     {
         // ReSharper disable once StaticMemberInGenericType
 
@@ -32,9 +32,9 @@ namespace CodeElements.NetworkCallTransmissionProtocol
         private const int EstimatedDataPerParameter = 200;
 
         /// <summary>
-        ///     Initialize a new instance of <see cref="CallTransmissionProtocol{TInterface}" />
+        ///     Initialize a new instance of <see cref="CallTransmission{TInterface}" />
         /// </summary>
-        public CallTransmissionProtocol()
+        public CallTransmission()
         {
             if (!typeof(TInterface).IsInterface)
                 throw new ArgumentException("Only interfaces accepted.", nameof(TInterface));
@@ -74,8 +74,6 @@ namespace CodeElements.NetworkCallTransmissionProtocol
         /// </summary>
         public TimeSpan WaitTimeout { get; set; } = TimeSpan.FromSeconds(30);
 
-
-
         /// <summary>
         ///     Intercepts an asynchronous method <paramref name="invocation" /> with return type of
         ///     <see cref="T:System.Threading.Tasks.Task" />.
@@ -104,6 +102,33 @@ namespace CodeElements.NetworkCallTransmissionProtocol
                 var result = await SendMethodCall(methodCache, invocation.Arguments).ConfigureAwait(false);
                 return (TResult) result;
             });
+        }
+
+        /// <summary>
+        /// Receive data from a <see cref="CallTransmissionExecuter{TInterface}"/>
+        /// </summary>
+        /// <param name="data">An array of bytes</param>
+        /// <param name="offset">The starting position within the buffer</param>
+        public override void ReceiveData(byte[] data, int offset)
+        {
+            //PROTOCOL
+            //RETURN:
+            //HEAD      - 4 bytes                   - Identifier, ASCII (NTR1)
+            //HEAD      - integer                   - callback identifier
+            //HEAD      - 1 byte                    - the response type (0 = executed, 1 = result returned, 2 = exception, 3 = not implemented)
+            //(BODY     - return object length      - the serialized return object)
+
+            if (data[offset++] != CallProtocolInfo.Header1 || data[offset++] != CallProtocolInfo.Header2 ||
+                data[offset++] != CallProtocolInfo.Header3Return || data[offset++] != CallProtocolInfo.Header4)
+                throw new ArgumentException("The package is invalid.");
+
+            var callbackId = BitConverter.ToUInt32(data, offset);
+            var responseType = (CallTransmissionResponseType) data[offset + 4];
+
+            if (_callbacks.TryRemove(callbackId, out var callback))
+                callback.ReceivedResult(responseType, data, offset + 5);
+            else
+                return; //could also throw exception here
         }
 
         private void InitializeInterface(Type interfaceType)
@@ -140,28 +165,6 @@ namespace CodeElements.NetworkCallTransmissionProtocol
             _methods = dictionary;
         }
 
-        public void ReceiveData(byte[] buffer, int offset, int length)
-        {
-            //PROTOCOL
-            //RETURN:
-            //HEAD      - 4 bytes                   - Identifier, ASCII (NTR1)
-            //HEAD      - integer                   - callback identifier
-            //HEAD      - 1 byte                    - the response type (0 = executed, 1 = result returned, 2 = exception, 3 = not implemented)
-            //(BODY     - return object length      - the serialized return object)
-
-            if (buffer[offset++] != ProtocolInfo.Header1 || buffer[offset++] != ProtocolInfo.Header2 ||
-                buffer[offset++] != ProtocolInfo.Header3Return || buffer[offset++] != ProtocolInfo.Header4)
-                throw new ArgumentException("The package is invalid.");
-
-            var callbackId = BitConverter.ToUInt32(buffer, offset);
-            var responseType = (CallTransmissionResponseType) buffer[offset + 4];
-
-            if (_callbacks.TryRemove(callbackId, out var callback))
-                callback.ReceivedResult(responseType, buffer, offset + 5);
-            else
-                return; //could also throw exception here
-        }
-
         private async Task<object> SendMethodCall(MethodCache methodCache, object[] parameters)
         {
             Contract.Ensures(methodCache != null);
@@ -194,10 +197,10 @@ namespace CodeElements.NetworkCallTransmissionProtocol
             }
 
             //write header
-            buffer[CustomOffset] = ProtocolInfo.Header1;
-            buffer[CustomOffset + 1] = ProtocolInfo.Header2;
-            buffer[CustomOffset + 2] = ProtocolInfo.Header3Call;
-            buffer[CustomOffset + 3] = ProtocolInfo.Header4;
+            buffer[CustomOffset] = CallProtocolInfo.Header1;
+            buffer[CustomOffset + 1] = CallProtocolInfo.Header2;
+            buffer[CustomOffset + 2] = CallProtocolInfo.Header3Call;
+            buffer[CustomOffset + 3] = CallProtocolInfo.Header4;
 
             //write callback id
             Buffer.BlockCopy(BitConverter.GetBytes(callbackId), 0, buffer, CustomOffset + 4, 4);

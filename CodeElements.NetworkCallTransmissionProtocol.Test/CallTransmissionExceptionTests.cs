@@ -15,14 +15,14 @@ namespace CodeElements.NetworkCallTransmissionProtocol.Test
         public Task TestNotImplementedException()
         {
             return Assert.ThrowsAsync<NotImplementedException>(
-                async () => await CallTransmissionProtocol.Interface.Test());
+                async () => await CallTransmission.Interface.Test());
         }
 
         [Fact]
         public async Task TestWebException()
         {
             var exception =
-                await Assert.ThrowsAsync<WebException>(async () => await CallTransmissionProtocol.Interface.Test2());
+                await Assert.ThrowsAsync<WebException>(async () => await CallTransmission.Interface.Test2());
             Assert.Equal("234adasd", exception.Message);
             Assert.NotNull(exception.StackTrace);
         }
@@ -31,7 +31,7 @@ namespace CodeElements.NetworkCallTransmissionProtocol.Test
         public async Task TestArgumentException()
         {
             var exception =
-                await Assert.ThrowsAsync<ArgumentException>(async () => await CallTransmissionProtocol.Interface.Test3("asd"));
+                await Assert.ThrowsAsync<ArgumentException>(async () => await CallTransmission.Interface.Test3("asd"));
             Assert.StartsWith("This is a test", exception.Message);
             Assert.Equal("asd", exception.ParamName);
             Assert.NotNull(exception.StackTrace);
@@ -41,7 +41,7 @@ namespace CodeElements.NetworkCallTransmissionProtocol.Test
         public async Task TestRemoteCallException()
         {
             var exception =
-                await Assert.ThrowsAsync<RemoteCallException>(async () => await CallTransmissionProtocol.Interface.Test4(1));
+                await Assert.ThrowsAsync<RemoteCallException>(async () => await CallTransmission.Interface.Test4(1));
             Assert.Equal(typeof(AggregateException).FullName, exception.ExceptionType);
             Assert.NotNull(exception.StackTrace);
         }

@@ -25,7 +25,7 @@ namespace CodeElements.NetworkCallTransmissionProtocol
         }
 
         /// <summary>
-        ///     Initialize a new instance of <see cref="CallTransmissionProtocol{TInterface}" /> with a cache
+        ///     Initialize a new instance of <see cref="CallTransmission{TInterface}" /> with a cache
         /// </summary>
         /// <param name="interfaceImplementation">The interface which can be called by the remote side</param>
         /// <param name="cache">Contains thread-safe information about the interface methods</param>
@@ -69,8 +69,8 @@ namespace CodeElements.NetworkCallTransmissionProtocol
             //HEAD      - 1 byte                    - the response type (0 = executed, 1 = result returned, 2 = exception, 3 = not implemented)
             //(BODY     - return object length      - the serialized return object)
 
-            if (buffer[offset++] != ProtocolInfo.Header1 || buffer[offset++] != ProtocolInfo.Header2 ||
-                buffer[offset++] != ProtocolInfo.Header3Call)
+            if (buffer[offset++] != CallProtocolInfo.Header1 || buffer[offset++] != CallProtocolInfo.Header2 ||
+                buffer[offset++] != CallProtocolInfo.Header3Call)
                 throw new ArgumentException("Invalid package format. Invalid header.");
 
             if (buffer[offset++] != 1)
@@ -80,10 +80,10 @@ namespace CodeElements.NetworkCallTransmissionProtocol
 
             void WriteResponseHeader(byte[] data)
             {
-                data[CustomOffset] = ProtocolInfo.Header1;
-                data[CustomOffset + 1] = ProtocolInfo.Header2;
-                data[CustomOffset + 2] = ProtocolInfo.Header3Return;
-                data[CustomOffset + 3] = ProtocolInfo.Header4;
+                data[CustomOffset] = CallProtocolInfo.Header1;
+                data[CustomOffset + 1] = CallProtocolInfo.Header2;
+                data[CustomOffset + 2] = CallProtocolInfo.Header3Return;
+                data[CustomOffset + 3] = CallProtocolInfo.Header4;
                 Buffer.BlockCopy(buffer, offset, data, CustomOffset + 4, 4); //copy callback id
             }
 

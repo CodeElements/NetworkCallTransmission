@@ -2,19 +2,81 @@
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
+using System.Reflection;
+using System.Threading;
 using CodeElements.NetworkCallTransmissionProtocol.Internal;
 using CodeElements.NetworkCallTransmissionProtocol.Proxy;
+using ZeroFormatter;
 
 namespace CodeElements.NetworkCallTransmissionProtocol
 {
+    internal class SubscribedEventInfo
+    {
+        public SubscribedEventInfo(EventInfo eventInfo)
+        {
+            EventInfo = eventInfo;
+            Triggers = new List<IEventTrigger>();
+            TriggersLock = new object();
+
+            if (eventInfo.EventHandlerType.IsGenericTypeDefinition)
+                EventHandlerParameterType = eventInfo.EventHandlerType.GetGenericArguments()[0];
+        }
+
+        public List<IEventTrigger> Triggers { get; }
+        public EventInfo EventInfo { get; }
+        public Type EventHandlerParameterType { get; }
+        public object TriggersLock { get; }
+    }
+
     public class EventManager : DataTransmitter
     {
-        private readonly ConcurrentDictionary<ulong, List<IEventTrigger>> _methodCalls;
+        private readonly ConcurrentDictionary<ulong, SubscribedEventInfo> _subscribedEvents;
         private readonly object _methodCallsAddLock = new object();
 
         public EventManager()
         {
-            _methodCalls = new ConcurrentDictionary<ulong, List<IEventTrigger>>();
+            _subscribedEvents = new ConcurrentDictionary<ulong, SubscribedEventInfo>();
+        }
+
+        /// <summary>
+        /// Receive data from a <see cref="EventRegister"/>
+        /// </summary>
+        /// <param name="data">An array of bytes</param>
+        /// <param name="offset">The starting position within the buffer</param>
+        public override void ReceiveData(byte[] data, int offset)
+        {
+            var responseType = (EventResponseType) data[offset];
+            switch (responseType)
+            {
+                case EventResponseType.TriggerEvent:
+                case EventResponseType.TriggerEventWithParameter:
+                    var withParameter = responseType == EventResponseType.TriggerEventWithParameter;
+                    var eventId = BitConverter.ToUInt64(data, offset + 1);
+
+                    List<IEventTrigger> triggers;
+                    if (!_subscribedEvents.TryGetValue(eventId, out var subscribedEvent))
+                        return;
+
+                    lock (subscribedEvent.TriggersLock)
+                    {
+                        triggers = subscribedEvent.Triggers.ToList(); //copy list
+                    }
+
+                    if (withParameter)
+                    {
+                        var parameter =
+                            ZeroFormatterSerializer.NonGeneric.Deserialize(subscribedEvent.EventHandlerParameterType,
+                                data, 9);
+                        foreach (var eventTrigger in triggers)
+                        {
+                            eventTrigger.GetType()
+                        }
+                    }
+                    break;
+                default:
+                    throw new ArgumentOutOfRangeException();
+            }
         }
 
         public IEventProvider<TEventInterface> GetEvents<TEventInterface>()
@@ -29,23 +91,20 @@ namespace CodeElements.NetworkCallTransmissionProtocol
             return provider;
         }
 
-        internal void SubscribeEvents(IEventTrigger eventTrigger, IEnumerable<ulong> events)
+        internal void SubscribeEvents(IEventTrigger eventTrigger, IEnumerable<Tuple<EventInfo, ulong>> events)
         {
             var eventsToRegister = new List<ulong>();
 
-            lock (_methodCallsAddLock)
+            foreach (var eventKey in events)
             {
-                foreach (var eventKey in events)
-                {
-                    if (!_methodCalls.TryGetValue(eventKey, out var eventInterceptors))
-                    {
-                        Debug.Assert(_methodCalls.TryAdd(eventKey,
-                            eventInterceptors = new List<IEventTrigger>())); //Assert
-                        eventsToRegister.Add(eventKey);
-                    }
+                var subscribedInfo = new Lazy<SubscribedEventInfo>(() => new SubscribedEventInfo(eventKey.Item1), LazyThreadSafetyMode.None);
+                var addedSubscribedInfo = _subscribedEvents.GetOrAdd(eventKey.Item2, l => subscribedInfo.Value);
 
-                    eventInterceptors.Add(eventTrigger);
-                }
+                lock (addedSubscribedInfo.TriggersLock)
+                    addedSubscribedInfo.Triggers.Add(eventTrigger);
+
+                if (subscribedInfo.IsValueCreated)
+                    eventsToRegister.Add(eventKey.Item2);
             }
 
             if (eventsToRegister.Count > 0)
@@ -56,17 +115,17 @@ namespace CodeElements.NetworkCallTransmissionProtocol
         {
             var eventsToUnregister = new List<ulong>();
 
-            lock (_methodCallsAddLock)
+            foreach (var eventKey in events)
             {
-                foreach (var eventKey in events)
+                if (_subscribedEvents.TryGetValue(eventKey, out var subscribedEventInfo))
                 {
-                    if (_methodCalls.TryGetValue(eventKey, out var eventInterceptors))
+                    lock (subscribedEventInfo.TriggersLock)
                     {
-                        eventInterceptors.Remove(eventTrigger);
-                        if (eventInterceptors.Count == 0)
+                        subscribedEventInfo.Triggers.Remove(eventTrigger);
+                        if (subscribedEventInfo.Triggers.Count == 0)
                         {
                             eventsToUnregister.Add(eventKey);
-                            _methodCalls.TryRemove(eventKey, out var _);
+                            _subscribedEvents.TryRemove(eventKey, out var _);
                         }
                     }
                 }

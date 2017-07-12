@@ -21,7 +21,7 @@ namespace CodeElements.NetworkCallTransmissionProtocol.Test
         [Theory, InlineData(12, 31, 43), InlineData(1, 1, 2), InlineData(234321, 34223, 268544)]
         public async Task TestSumValues(int x, int y, int result)
         {
-            Assert.Equal(result, await CallTransmissionProtocol.Interface.SumValues(x, y));
+            Assert.Equal(result, await CallTransmission.Interface.SumValues(x, y));
         }
 
         [Fact]
@@ -40,13 +40,13 @@ namespace CodeElements.NetworkCallTransmissionProtocol.Test
         [InlineData("this is a test", "IS", StringComparison.OrdinalIgnoreCase, 2)]
         public async Task TestIndexOf(string value, string needle, StringComparison comparison, int result)
         {
-            Assert.Equal(result, await CallTransmissionProtocol.Interface.IndexOf(value, needle, comparison));
+            Assert.Equal(result, await CallTransmission.Interface.IndexOf(value, needle, comparison));
         }
 
         [Fact]
         public async Task TestCustomObject()
         {
-            var result = await CallTransmissionProtocol.Interface.GetEnvironmentInfo();
+            var result = await CallTransmission.Interface.GetEnvironmentInfo();
             Assert.Equal("asd", result.Test1);
             Assert.False(result.Test2);
             Assert.Equal(3.141, result.Test3);
@@ -55,7 +55,7 @@ namespace CodeElements.NetworkCallTransmissionProtocol.Test
         [Fact]
         public async Task TestReturnAbstractClass()
         {
-            var result = await CallTransmissionProtocol.Interface.GetCurrentClient();
+            var result = await CallTransmission.Interface.GetCurrentClient();
             Assert.Equal(123, result.Id);
 
             var adminClient = Assert.IsAssignableFrom<AdminClient>(result);
@@ -66,7 +66,7 @@ namespace CodeElements.NetworkCallTransmissionProtocol.Test
         public async Task TestAbstractClassAsParameter()
         {
             var adminClient = new AdminClient {Id = 132};
-            var result = await CallTransmissionProtocol.Interface.GetNextClient(adminClient, "test123");
+            var result = await CallTransmission.Interface.GetNextClient(adminClient, "test123");
 
             Assert.Equal(result.Id, adminClient.Id);
 

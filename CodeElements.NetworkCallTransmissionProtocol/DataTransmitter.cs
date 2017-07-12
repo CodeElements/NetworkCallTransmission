@@ -23,6 +23,13 @@ namespace CodeElements.NetworkCallTransmissionProtocol
         /// </summary>
         public SendDataDelegate SendData { get; set; }
 
+        /// <summary>
+        /// Receive data
+        /// </summary>
+        /// <param name="data">An array of bytes</param>
+        /// <param name="offset">The starting position within the buffer</param>
+        public abstract void ReceiveData(byte[] data, int offset);
+
         protected virtual Task OnSendData(ResponseData data)
         {
             if (SendData == null)

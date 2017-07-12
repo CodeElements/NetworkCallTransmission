@@ -27,6 +27,19 @@ namespace CodeElements.NetworkCallTransmissionProtocol
             _subscribedEvents = new Dictionary<EventInfo, int>();
         }
 
+        public void Dispose()
+        {
+            IEnumerable<ulong> events;
+            lock (_eventSubscribingLock)
+            {
+                //ToList() is very important!!!
+                events = _subscribedEvents.Select(x => x.Key.GetEventId(_eventInterface, _eventSessionId)).ToList();
+                _subscribedEvents.Clear();
+            }
+
+            _eventManager.UnsubscribeEvents(this, events);
+        }
+
         public TEvents Events { get; set; }
 
         public void EventSubscribed(EventInfo eventInfo)
@@ -105,19 +118,6 @@ namespace CodeElements.NetworkCallTransmissionProtocol
             }
 
             SubscribeToEvents(eventsToSubscribe);
-        }
-
-        public void Dispose()
-        {
-            IEnumerable<ulong> events;
-            lock (_eventSubscribingLock)
-            {
-                //ToList() is very important!!!
-                events = _subscribedEvents.Select(x => x.Key.GetEventId(_eventInterface, _eventSessionId)).ToList();
-                _subscribedEvents.Clear();
-            }
-
-            _eventManager.UnsubscribeEvents(this, events);
         }
     }
 }

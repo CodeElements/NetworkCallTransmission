@@ -12,7 +12,7 @@ namespace CodeElements.NetworkCallTransmissionProtocol.Test
             var cache = exe1.Cache;
             _executer = new CallTransmissionExecuter<IBasicTestInterface>(new BasicTestInterfaceImpl(), cache);
 
-            _transmissionProtocol = new CallTransmissionProtocol<IBasicTestInterface>
+            _transmission = new CallTransmission<IBasicTestInterface>
             {
                 SendData = SendData,
                 WaitTimeout = TimeSpan.FromSeconds(5)
@@ -20,19 +20,19 @@ namespace CodeElements.NetworkCallTransmissionProtocol.Test
         }
 
         private readonly CallTransmissionExecuter<IBasicTestInterface> _executer;
-        private readonly CallTransmissionProtocol<IBasicTestInterface> _transmissionProtocol;
+        private readonly CallTransmission<IBasicTestInterface> _transmission;
 
         private async Task SendData(ResponseData responseData)
         {
             var buffer = responseData;
-            var result = await _executer.ReceiveData(buffer.Data, 0, buffer.Length);
-            _transmissionProtocol.ReceiveData(result.Data, 0, result.Length);
+            var result = await _executer.ReceiveData(buffer.Data, 0);
+            _transmission.ReceiveData(result.Data, 0);
         }
 
         [Fact]
         public async Task TestSum()
         {
-            Assert.Equal(5, await _transmissionProtocol.Interface.SumValues(2, 3));
+            Assert.Equal(5, await _transmission.Interface.SumValues(2, 3));
         }
     }
 }

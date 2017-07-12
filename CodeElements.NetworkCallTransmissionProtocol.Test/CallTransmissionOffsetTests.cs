@@ -17,18 +17,18 @@ namespace CodeElements.NetworkCallTransmissionProtocol.Test
             var buffer = new byte[data.Length + Offset];
             Buffer.BlockCopy(data.Data, 0, buffer, Offset, data.Length);
 
-            var result = await CallTransmissionExecuter.ReceiveData(buffer, Offset, data.Length);
+            var result = await CallTransmissionExecuter.ReceiveData(buffer, Offset);
 
             var responseBuffer = new byte[result.Length + Offset];
             Buffer.BlockCopy(result.Data, 0, responseBuffer, Offset, result.Length);
 
-            CallTransmissionProtocol.ReceiveData(responseBuffer, Offset, result.Length);
+            CallTransmission.ReceiveData(responseBuffer, Offset);
         }
 
         [Fact]
         public async Task TestSendReceive()
         {
-            var result = await CallTransmissionProtocol.Interface.Test("43F0246C-3943-4D02-A891-61AC2EE152E2");
+            var result = await CallTransmission.Interface.Test("43F0246C-3943-4D02-A891-61AC2EE152E2");
             Assert.Equal("19E27D75-E32B-4F47-85F9-095A1025BE2E", result);
         }
 

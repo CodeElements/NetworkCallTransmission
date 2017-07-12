@@ -11,7 +11,7 @@ namespace CodeElements.NetworkCallTransmissionProtocol.Test
 
         public CallTransmissionCustomOffsetTests() : base(new OffsetTestInterfaceImplementation())
         {
-            CallTransmissionProtocol.CustomOffset = ProtocolOffset;
+            CallTransmission.CustomOffset = ProtocolOffset;
             CallTransmissionExecuter.CustomOffset = ExecuterOffset;
         }
 
@@ -20,10 +20,10 @@ namespace CodeElements.NetworkCallTransmissionProtocol.Test
             var buffer = data.Data;
             Buffer.BlockCopy(new byte[ProtocolOffset], 0, buffer, 0, ProtocolOffset); //null all offset bytes
 
-            var result = await CallTransmissionExecuter.ReceiveData(buffer, ProtocolOffset, data.Length);
+            var result = await CallTransmissionExecuter.ReceiveData(buffer, ProtocolOffset);
             Buffer.BlockCopy(new byte[ExecuterOffset], 0, result.Data, 0, ExecuterOffset);
 
-            CallTransmissionProtocol.ReceiveData(result.Data, ExecuterOffset, result.Length);
+            CallTransmission.ReceiveData(result.Data, ExecuterOffset);
         }
 
         private class OffsetTestInterfaceImplementation : IOffsetTestInterface
@@ -38,7 +38,7 @@ namespace CodeElements.NetworkCallTransmissionProtocol.Test
         [Fact]
         public async Task TestSendReceive()
         {
-            var result = await CallTransmissionProtocol.Interface.Test("632D923B-3303-4AEE-B96B-2AAB8525F139");
+            var result = await CallTransmission.Interface.Test("632D923B-3303-4AEE-B96B-2AAB8525F139");
             Assert.Equal("861CE16C-98F6-4BB7-B30C-821A78FDF1C4", result);
         }
     }

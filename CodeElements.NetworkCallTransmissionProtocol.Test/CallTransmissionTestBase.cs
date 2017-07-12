@@ -6,11 +6,11 @@ namespace CodeElements.NetworkCallTransmissionProtocol.Test
     public abstract class CallTransmissionTestBase<TInterface>
     {
         protected readonly CallTransmissionExecuter<TInterface> CallTransmissionExecuter;
-        protected readonly CallTransmissionProtocol<TInterface> CallTransmissionProtocol;
+        protected readonly CallTransmission<TInterface> CallTransmission;
 
         protected CallTransmissionTestBase(TInterface implementation)
         {
-            CallTransmissionProtocol = new CallTransmissionProtocol<TInterface>
+            CallTransmission = new CallTransmission<TInterface>
             {
                 SendData = SendData,
                 WaitTimeout = TimeSpan.FromSeconds(5)
@@ -20,8 +20,8 @@ namespace CodeElements.NetworkCallTransmissionProtocol.Test
 
         protected virtual async Task SendData(ResponseData data)
         {
-            var result = await CallTransmissionExecuter.ReceiveData(data.Data, 0, data.Length);
-            CallTransmissionProtocol.ReceiveData(result.Data, 0, result.Length);
+            var result = await CallTransmissionExecuter.ReceiveData(data.Data, 0);
+            CallTransmission.ReceiveData(result.Data, 0);
         }
     }
 }

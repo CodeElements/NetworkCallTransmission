@@ -50,7 +50,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="CallTransmissionExecuter.cs" />
-    <Compile Include="CallTransmissionProtocol.cs" />
+    <Compile Include="CallTransmission.cs" />
     <Compile Include="DataTransmitter.cs" />
     <Compile Include="EventManager.cs" />
     <Compile Include="EventProvider.cs" />
@@ -60,6 +60,7 @@
     <Compile Include="IEventProvider.cs" />
     <Compile Include="IEventTrigger.cs" />
     <Compile Include="Internal\EventPackageType.cs" />
+    <Compile Include="Internal\EventResponseType.cs" />
     <Compile Include="Proxy\DefaultMethodEmitter.cs" />
     <Compile Include="Proxy\DisposeProxyBuilder.cs" />
     <Compile Include="Proxy\EventInterceptorImplementor.cs" />
@@ -84,7 +85,7 @@
     <Compile Include="Internal\MethodCache.cs" />
     <Compile Include="Internal\MethodInvoker.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="Internal\ProtocolInfo.cs" />
+    <Compile Include="Internal\CallProtocolInfo.cs" />
     <Compile Include="RemoteCallException.cs" />
     <Compile Include="ResponseData.cs" />
     <Compile Include="Internal\CallTransmissionResponseType.cs" />

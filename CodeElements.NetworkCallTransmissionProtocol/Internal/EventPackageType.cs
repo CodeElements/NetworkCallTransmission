@@ -1,15 +1,8 @@
 ﻿namespace CodeElements.NetworkCallTransmissionProtocol.Internal
 {
-    public enum EventPackageType
+    internal enum EventPackageType
     {
         SubscribeEvent,
-        UnsubscribeEvent,
-        Clear
-    }
-
-    public enum EventResponseType
-    {
-        TriggerEvent,
-        TriggerEventWithParameter
+        UnsubscribeEvent
     }
 }
