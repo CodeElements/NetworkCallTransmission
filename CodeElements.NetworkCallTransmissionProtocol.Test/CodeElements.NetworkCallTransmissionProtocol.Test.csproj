@@ -55,9 +55,11 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="CallTransmissionCustomOffsetTests.cs" />
     <Compile Include="CallTransmissionExceptionTests.cs" />
     <Compile Include="CallTransmissionExecuterCacheTests.cs" />
     <Compile Include="CallTransmissionBasicTests.cs" />
+    <Compile Include="CallTransmissionOffsetTests.cs" />
     <Compile Include="CallTransmissionTestBase.cs" />
     <Compile Include="ExecuterInterfaceCacheTests.cs" />
     <Compile Include="Extensions\MurmurHashTests.cs" />

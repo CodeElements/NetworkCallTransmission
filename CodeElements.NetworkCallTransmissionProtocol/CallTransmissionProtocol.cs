@@ -19,15 +19,8 @@ namespace CodeElements.NetworkCallTransmissionProtocol
     ///     The client side of the network protocol. Provides the class which mapps the interface methods to the remote methods
     /// </summary>
     /// <typeparam name="TInterface">The remote interface. The receiving site must have the same interface available.</typeparam>
-    public class CallTransmissionProtocol<TInterface> : IDisposable, IAsyncInterceptor
+    public class CallTransmissionProtocol<TInterface> : DataTransmitter, IDisposable, IAsyncInterceptor
     {
-        /// <summary>
-        ///     The delegate which will get invoked when a package should be sent to the remote site
-        /// </summary>
-        /// <param name="data">The data to send.</param>
-        /// <returns>Return the task which completes once the package is sent</returns>
-        public delegate Task SendDataDelegate(ResponseData data);
-
         // ReSharper disable once StaticMemberInGenericType
 
         private readonly ConcurrentDictionary<uint, ResultCallback> _callbacks;
@@ -71,12 +64,6 @@ namespace CodeElements.NetworkCallTransmissionProtocol
         }
 
         /// <summary>
-        ///     The delegate which will get invoked when a package should be sent to the remote site. This property must be set
-        ///     before the interface is used.
-        /// </summary>
-        public SendDataDelegate SendData { get; set; }
-
-        /// <summary>
         ///     The interface which provides the methods
         /// </summary>
         public TInterface Interface => _lazyInterface.Value;
@@ -87,10 +74,7 @@ namespace CodeElements.NetworkCallTransmissionProtocol
         /// </summary>
         public TimeSpan WaitTimeout { get; set; } = TimeSpan.FromSeconds(30);
 
-        /// <summary>
-        ///     Reserve bytes at the beginning of the <see cref="SendData" /> buffer for custom headers
-        /// </summary>
-        public int CustomOffset { get; set; }
+
 
         /// <summary>
         ///     Intercepts an asynchronous method <paramref name="invocation" /> with return type of
@@ -170,7 +154,7 @@ namespace CodeElements.NetworkCallTransmissionProtocol
                 throw new ArgumentException("The package is invalid.");
 
             var callbackId = BitConverter.ToUInt32(buffer, offset);
-            var responseType = (ResponseType) buffer[offset + 4];
+            var responseType = (CallTransmissionResponseType) buffer[offset + 4];
 
             if (_callbacks.TryRemove(callbackId, out var callback))
                 callback.ReceivedResult(responseType, buffer, offset + 5);
@@ -197,7 +181,7 @@ namespace CodeElements.NetworkCallTransmissionProtocol
             var buffer = new byte[CustomOffset /* user offset */ + 4 /* Header */ + 4 /* Callback id */ +
                                   4 /* method id */ +  parameters.Length * 4 /* parameter meta */ +
                                   EstimatedDataPerParameter * parameters.Length /* parameter data */];
-            var bufferOffset = CustomOffset + 24 + parameters.Length * 4;
+            var bufferOffset = CustomOffset + 12 + parameters.Length * 4;
 
             for (var i = 0; i < parameters.Length; i++)
             {
@@ -238,28 +222,19 @@ namespace CodeElements.NetworkCallTransmissionProtocol
 
                 switch (callback.ResponseType)
                 {
-                    case ResponseType.MethodExecuted:
+                    case CallTransmissionResponseType.MethodExecuted:
                         return null;
-                    case ResponseType.ResultReturned:
+                    case CallTransmissionResponseType.ResultReturned:
                         return ZeroFormatterSerializer.NonGeneric.Deserialize(methodCache.ReturnType, callback.Data,
                             callback.Offset);
-                    case ResponseType.Exception:
+                    case CallTransmissionResponseType.Exception:
                         throw ExceptionSerializer.Deserialize(callback.Data, callback.Offset);
-                    case ResponseType.MethodNotImplemented:
+                    case CallTransmissionResponseType.MethodNotImplemented:
                         throw new NotImplementedException("The remote method is not implemented.");
                     default:
                         throw new ArgumentOutOfRangeException();
                 }
             }
-        }
-
-        protected virtual Task OnSendData(ResponseData data)
-        {
-            if (SendData == null)
-                throw new InvalidOperationException(
-                    "The SendData delegate is null. Please initialize this class before using.");
-
-            return SendData(data);
         }
     }
 }

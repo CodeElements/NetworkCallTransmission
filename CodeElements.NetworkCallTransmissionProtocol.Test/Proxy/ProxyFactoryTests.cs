@@ -60,6 +60,26 @@ namespace CodeElements.NetworkCallTransmissionProtocol.Test.Proxy
         }
 
         [Fact]
+        public void TestCreateEventSuspend()
+        {
+            var interceptor = new TestInterceptor();
+            var interfaceObj = ProxyFactory.CreateProxy<IEventTestInterface>(interceptor);
+            Assert.False(interceptor.Suspended);
+            interfaceObj.SuspendSubscribing();
+            Assert.True(interceptor.Suspended);
+        }
+
+        [Fact]
+        public void TestCreateEventResume()
+        {
+            var interceptor = new TestInterceptor();
+            var interfaceObj = ProxyFactory.CreateProxy<IEventTestInterface>(interceptor);
+            Assert.False(interceptor.Resumed);
+            interfaceObj.ResumeSubscribing();
+            Assert.True(interceptor.Resumed);
+        }
+
+        [Fact]
         public void TestCreateInterface()
         {
             var interceptor = new TestInceptor();
@@ -73,6 +93,8 @@ namespace CodeElements.NetworkCallTransmissionProtocol.Test.Proxy
             public bool Subscribed { get; set; }
             public bool Disposed { get; set; }
             public bool Unsubscribed { get; set; }
+            public bool Suspended { get; set; }
+            public bool Resumed { get; set; }
 
             public void EventSubscribed(EventInfo eventInfo)
             {
@@ -86,10 +108,12 @@ namespace CodeElements.NetworkCallTransmissionProtocol.Test.Proxy
 
             public void SuspendSubscribing()
             {
+                Suspended = true;
             }
 
             public void ResumeSubscribing()
             {
+                Resumed = true;
             }
 
             public void Dispose()

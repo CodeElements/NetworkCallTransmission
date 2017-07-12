@@ -1,6 +1,6 @@
 namespace CodeElements.NetworkCallTransmissionProtocol.Internal
 {
-    internal enum ResponseType
+    internal enum CallTransmissionResponseType
     {
         MethodExecuted,
         ResultReturned,

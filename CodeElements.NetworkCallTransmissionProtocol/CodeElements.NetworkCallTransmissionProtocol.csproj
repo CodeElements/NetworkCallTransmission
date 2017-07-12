@@ -51,10 +51,12 @@
   <ItemGroup>
     <Compile Include="CallTransmissionExecuter.cs" />
     <Compile Include="CallTransmissionProtocol.cs" />
+    <Compile Include="DataTransmitter.cs" />
     <Compile Include="EventManager.cs" />
     <Compile Include="Exceptions\ExceptionSerializer.cs" />
     <Compile Include="Extensions\MurmurHash.cs" />
     <Compile Include="IEventProvider.cs" />
+    <Compile Include="Internal\EventPackageType.cs" />
     <Compile Include="Proxy\DefaultMethodEmitter.cs" />
     <Compile Include="Proxy\DisposeProxyBuilder.cs" />
     <Compile Include="Proxy\EventInterceptorImplementor.cs" />
@@ -82,7 +84,7 @@
     <Compile Include="Internal\ProtocolInfo.cs" />
     <Compile Include="RemoteCallException.cs" />
     <Compile Include="ResponseData.cs" />
-    <Compile Include="Internal\ResponseType.cs" />
+    <Compile Include="Internal\CallTransmissionResponseType.cs" />
     <Compile Include="Internal\ResultCallback.cs" />
   </ItemGroup>
   <ItemGroup>

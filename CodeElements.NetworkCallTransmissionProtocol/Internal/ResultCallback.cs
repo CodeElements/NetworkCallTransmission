@@ -24,7 +24,7 @@ namespace CodeElements.NetworkCallTransmissionProtocol.Internal
             }
         }
 
-        public ResponseType ResponseType { get; private set; }
+        public CallTransmissionResponseType ResponseType { get; private set; }
         public byte[] Data { get; private set; }
         public int Offset { get; private set; }
 
@@ -33,7 +33,7 @@ namespace CodeElements.NetworkCallTransmissionProtocol.Internal
             return _semaphoreSlim.WaitAsync(timeout);
         }
 
-        public void ReceivedResult(ResponseType responseType, byte[] data, int offset)
+        public void ReceivedResult(CallTransmissionResponseType responseType, byte[] data, int offset)
         {
             if (_isDisposed)
                 return;

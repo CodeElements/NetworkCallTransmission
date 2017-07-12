@@ -48,7 +48,7 @@ namespace CodeElements.NetworkCallTransmissionProtocol.Test
         {
             var result = await CallTransmissionProtocol.Interface.GetEnvironmentInfo();
             Assert.Equal("asd", result.Test1);
-            Assert.Equal(false, result.Test2);
+            Assert.False(result.Test2);
             Assert.Equal(3.141, result.Test3);
         }
 
@@ -59,7 +59,7 @@ namespace CodeElements.NetworkCallTransmissionProtocol.Test
             Assert.Equal(123, result.Id);
 
             var adminClient = Assert.IsAssignableFrom<AdminClient>(result);
-            Assert.Equal(adminClient.Permissions, 19);
+            Assert.Equal(19, adminClient.Permissions);
         }
 
         [Fact]

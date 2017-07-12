@@ -14,9 +14,9 @@ namespace CodeElements.NetworkCallTransmissionProtocol.Extensions
                                            .Select(x => x.Position.ToString() + x.ParameterType.FullName)));
         }
 
-        public static uint GetEventId(this EventInfo eventInfo, Type interfaceType)
+        public static ulong GetEventId(this EventInfo eventInfo, Type interfaceType, uint sessionId)
         {
-            return MurmurHash.Hash(eventInfo.Name + eventInfo.EventHandlerType.FullName + interfaceType.Name);
+            return MurmurHash.Hash(eventInfo.Name + eventInfo.EventHandlerType.FullName + interfaceType.Name) << 32 | sessionId;
         }
     }
 }

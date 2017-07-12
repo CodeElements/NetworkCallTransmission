@@ -85,7 +85,7 @@ namespace CodeElements.NetworkCallTransmissionProtocol
                 data[CustomOffset + 1] = ProtocolInfo.Header2;
                 data[CustomOffset + 2] = ProtocolInfo.Header3Return;
                 data[CustomOffset + 3] = ProtocolInfo.Header4;
-                Buffer.BlockCopy(buffer, 4, data, CustomOffset + 4, 4); //copy callback id
+                Buffer.BlockCopy(buffer, offset, data, CustomOffset + 4, 4); //copy callback id
             }
 
             //method not found/implemented
@@ -93,7 +93,7 @@ namespace CodeElements.NetworkCallTransmissionProtocol
             {
                 var response = new byte[CustomOffset /* user offset */ + 8 /* Header */ + 1 /* response type */];
                 WriteResponseHeader(response);
-                response[CustomOffset + 8] = (byte) ResponseType.MethodNotImplemented;
+                response[CustomOffset + 8] = (byte) CallTransmissionResponseType.MethodNotImplemented;
                 return new ResponseData(response);
             }
 
@@ -120,7 +120,7 @@ namespace CodeElements.NetworkCallTransmissionProtocol
                 var data = ExceptionSerializer.Serialize(e);
                 var response = new byte[CustomOffset /* user offset */ + 8 /* Header */ + 1 /* response type */ + data.Length /* exception */];
                 WriteResponseHeader(response);
-                response[CustomOffset + 8] = (byte) ResponseType.Exception;
+                response[CustomOffset + 8] = (byte) CallTransmissionResponseType.Exception;
                 Buffer.BlockCopy(data, 0, response, CustomOffset + 9, data.Length);
                 return new ResponseData(response);
             }
@@ -131,7 +131,7 @@ namespace CodeElements.NetworkCallTransmissionProtocol
 
                 var response = new byte[CustomOffset + EstimatedResultBufferSize];
                 WriteResponseHeader(response);
-                response[CustomOffset + 8] = (byte) ResponseType.ResultReturned;
+                response[CustomOffset + 8] = (byte) CallTransmissionResponseType.ResultReturned;
 
                 var responseLength =
                     ZeroFormatterSerializer.NonGeneric.Serialize(methodInvoker.ReturnType, ref response, CustomOffset + 9, result);
@@ -141,7 +141,7 @@ namespace CodeElements.NetworkCallTransmissionProtocol
             {
                 var response = new byte[CustomOffset /* user offset */ + 8 /* Header */ + 1 /* response type */];
                 WriteResponseHeader(response);
-                response[CustomOffset + 8] = (byte) ResponseType.MethodExecuted;
+                response[CustomOffset + 8] = (byte) CallTransmissionResponseType.MethodExecuted;
                 return new ResponseData(response);
             }
         }

@@ -12,7 +12,7 @@ namespace CodeElements.NetworkCallTransmissionProtocol.Test.Internal
         {
             var x = new ResultCallback();
             Assert.False(await x.Wait(TimeSpan.FromMilliseconds(100)));
-            x.ReceivedResult(ResponseType.Exception, null, 0); //no exception
+            x.ReceivedResult(CallTransmissionResponseType.Exception, null, 0); //no exception
         }
 
         [Fact]
@@ -23,10 +23,10 @@ namespace CodeElements.NetworkCallTransmissionProtocol.Test.Internal
 
             var x = new ResultCallback();
             await Task.Delay(TimeSpan.FromMilliseconds(50))
-                .ContinueWith(task => x.ReceivedResult(ResponseType.MethodExecuted, testData, 4));
+                .ContinueWith(task => x.ReceivedResult(CallTransmissionResponseType.MethodExecuted, testData, 4));
             await x.Wait(TimeSpan.FromSeconds(1));
 
-            Assert.Equal(ResponseType.MethodExecuted, x.ResponseType);
+            Assert.Equal(CallTransmissionResponseType.MethodExecuted, x.ResponseType);
             Assert.Equal(testData, x.Data);
             Assert.Equal(4, x.Offset);
         }
@@ -44,7 +44,7 @@ namespace CodeElements.NetworkCallTransmissionProtocol.Test.Internal
             var x = new ResultCallback();
             Assert.False(await x.Wait(TimeSpan.FromMilliseconds(50)));
             x.Dispose();
-            x.ReceivedResult(ResponseType.MethodExecuted, null, 0);
+            x.ReceivedResult(CallTransmissionResponseType.MethodExecuted, null, 0);
         }
 
         [Fact]
