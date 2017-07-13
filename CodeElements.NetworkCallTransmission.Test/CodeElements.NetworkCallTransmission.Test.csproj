@@ -62,6 +62,7 @@
     <Compile Include="CallTransmissionOffsetTests.cs" />
     <Compile Include="CallTransmissionTestBase.cs" />
     <Compile Include="EventTransmissionBasicTests.cs" />
+    <Compile Include="EventTransmissionPermissionsTests.cs" />
     <Compile Include="EventTransmissionTestBase.cs" />
     <Compile Include="ExecuterInterfaceCacheTests.cs" />
     <Compile Include="Extensions\MurmurHashTests.cs" />

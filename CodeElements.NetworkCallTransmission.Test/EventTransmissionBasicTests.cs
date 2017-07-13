@@ -14,7 +14,7 @@ namespace CodeElements.NetworkCallTransmission.Test
             EventRegister.RegisterEvents<IBasicTestEvents>(_basicTestEventsImpl = new BasicTestEventsImpl());
 
             _eventSubscriber = new DefaultEventSubscriber();
-            ConnectDefaultEventSubscriber(_eventSubscriber);
+            ConnectTestEventSubscriber(_eventSubscriber);
         }
 
         [Fact]

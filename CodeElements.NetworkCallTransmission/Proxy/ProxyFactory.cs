@@ -5,13 +5,13 @@ using System.Reflection.Emit;
 
 namespace CodeElements.NetworkCallTransmission.Proxy
 {
-	internal static class ProxyFactory
+    internal static class ProxyFactory
 	{
 		private static readonly ConstructorInfo BaseConstructor = typeof(object).GetConstructor(new Type[0]);
 
-	    public static T CreateProxy<T>(IEventInterceptor eventInterceptor)
+	    public static EventProxyInitializationInfo CreateProxy<T>()
         {
-	        var typeBuilder = BuildTypeFromInterface(typeof(T), out var interfaceList, out var assemblyBuilder);
+	        var typeBuilder = BuildTypeFromInterface(typeof(T), out var interfaceList);
 
             var eventInterceptorImplementor = new EventInterceptorImplementor();
             eventInterceptorImplementor.ImplementProxy(typeBuilder);
@@ -29,21 +29,24 @@ namespace CodeElements.NetworkCallTransmission.Proxy
 
             eventInterceptorImplementor.ImplementTriggerEvent(typeBuilder, eventFields, events);
 
-	        var proxyType = typeBuilder.CreateType();
-            assemblyBuilder.Save("test.dll");
-            
-	        var result = (T) Activator.CreateInstance(proxyType);
+            var proxyType = typeBuilder.CreateType();
+            return new EventProxyInitializationInfo(proxyType, events.ToArray());
+        }
+
+	    public static T InitializeEventProxy<T>(EventProxyInitializationInfo initializationInfo, IEventInterceptor eventInterceptor)
+	    {
+	        var result = (T)Activator.CreateInstance(initializationInfo.ProxyType);
 
 	        var proxy = (IEventInterceptorProxy) result;
 	        proxy.Interceptor = eventInterceptor;
-	        proxy.Events = events.ToArray();
+	        proxy.Events = initializationInfo.Events;
 
 	        return result;
         }
 
         public static T CreateProxy<T>(IAsyncInterceptor asyncInterceptor)
         {
-            var typeBuilder = BuildTypeFromInterface(typeof(T), out var interfaceList, out var _);
+            var typeBuilder = BuildTypeFromInterface(typeof(T), out var interfaceList);
 
             //Implement IAsyncInterceptorProxy
             var implementor = new AsyncInterceptorImplementor();
@@ -67,7 +70,7 @@ namespace CodeElements.NetworkCallTransmission.Proxy
 			return result;
 		}
 
-        private static TypeBuilder BuildTypeFromInterface(Type interfaceType, out List<Type> interfaceList, out AssemblyBuilder assemblyBuilder)
+        private static TypeBuilder BuildTypeFromInterface(Type interfaceType, out List<Type> interfaceList)
 	    {
 	        var currentDomain = AppDomain.CurrentDomain;
 	        var typeName = $"{interfaceType.Name}Proxy";
@@ -76,9 +79,9 @@ namespace CodeElements.NetworkCallTransmission.Proxy
 
 	        var name = new AssemblyName(assemblyName);
 
-	        var access = AssemblyBuilderAccess.RunAndSave;
-	        assemblyBuilder = currentDomain.DefineDynamicAssembly(name, access);
-	        var moduleBuilder = assemblyBuilder.DefineDynamicModule(moduleName, "test.module");
+	        var access = AssemblyBuilderAccess.Run;
+	        var assemblyBuilder = currentDomain.DefineDynamicAssembly(name, access);
+	        var moduleBuilder = assemblyBuilder.DefineDynamicModule(moduleName);
 	        var typeAttributes = TypeAttributes.AutoClass | TypeAttributes.Class |
 	                             TypeAttributes.Public;
 

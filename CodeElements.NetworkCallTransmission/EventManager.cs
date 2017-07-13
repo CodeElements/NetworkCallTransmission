@@ -16,6 +16,7 @@ namespace CodeElements.NetworkCallTransmission
     public class EventManager : DataTransmitter, IEventManager
     {
         private readonly ConcurrentDictionary<ulong, SubscribedEventInfo> _subscribedEvents;
+        private readonly ConcurrentDictionary<Type, Lazy<EventProxyInitializationInfo>> _interfaceGeneratedTypes;
 
         /// <summary>
         ///     Initialize a new instance of <see cref="EventManager" />
@@ -23,6 +24,7 @@ namespace CodeElements.NetworkCallTransmission
         public EventManager()
         {
             _subscribedEvents = new ConcurrentDictionary<ulong, SubscribedEventInfo>();
+            _interfaceGeneratedTypes = new ConcurrentDictionary<Type, Lazy<EventProxyInitializationInfo>>();
         }
 
         /// <summary>
@@ -49,8 +51,18 @@ namespace CodeElements.NetworkCallTransmission
         /// <returns>Return an <see cref="IEventProvider{TEventInterface}" /> which manages the events</returns>
         public IEventProvider<TEventInterface> GetEvents<TEventInterface>(uint eventSessionId)
         {
+            //we use a lazy here because ProxyFactory.CreateProxy is a really intensitive function (a new assembly is built and loaded)
+            //and we only want it to execute once (thats the reason for the cache). The problem is that msdn says for GetOrAdd():
+            //"If you call GetOrAdd simultaneously on different threads, addValueFactory may be called multiple times [...]"
+            //see: https://stackoverflow.com/questions/12611167/why-does-concurrentdictionary-getoraddkey-valuefactory-allow-the-valuefactory
+
+            var lazy = new Lazy<EventProxyInitializationInfo>(ProxyFactory.CreateProxy<TEventInterface>,
+                LazyThreadSafetyMode.ExecutionAndPublication);
+
+            var initializationInfo = _interfaceGeneratedTypes.GetOrAdd(typeof(TEventInterface), lazy);
+
             var provider = new EventProvider<TEventInterface>(eventSessionId, typeof(TEventInterface), this);
-            provider.Events = ProxyFactory.CreateProxy<TEventInterface>(provider);
+            provider.Events = ProxyFactory.InitializeEventProxy<TEventInterface>(initializationInfo.Value, provider);
             return provider;
         }
 

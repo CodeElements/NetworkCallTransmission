@@ -70,6 +70,7 @@
     <Compile Include="Proxy\DefaultMethodEmitter.cs" />
     <Compile Include="Proxy\DisposeProxyBuilder.cs" />
     <Compile Include="Proxy\EventInterceptorImplementor.cs" />
+    <Compile Include="Proxy\EventProxyInitializationInfo.cs" />
     <Compile Include="Proxy\IAsyncInterceptor.cs" />
     <Compile Include="Proxy\IEventInterceptor.cs" />
     <Compile Include="Proxy\IEventInterceptorProxy.cs" />

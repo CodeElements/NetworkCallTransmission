@@ -12,7 +12,8 @@ namespace CodeElements.NetworkCallTransmission.Test.Proxy
         public void TestCreateEventProxySubscribe()
         {
             var interceptor = new TestInterceptor();
-            var interfaceObj = ProxyFactory.CreateProxy<IEventTestInterface>(interceptor);
+            var interfaceObj =
+                ProxyFactory.InitializeEventProxy<IEventTestInterface>(ProxyFactory.CreateProxy<IEventTestInterface>(), interceptor);
             Assert.False(interceptor.Subscribed);
             interfaceObj.TestEvent3 += (sender, args) => { };
             Assert.True(interceptor.Subscribed);
@@ -22,7 +23,8 @@ namespace CodeElements.NetworkCallTransmission.Test.Proxy
         public void TestCreateEventProxyUnsubscribe()
         {
             var interceptor = new TestInterceptor();
-            var interfaceObj = ProxyFactory.CreateProxy<IEventTestInterface>(interceptor);
+            var interfaceObj =
+                ProxyFactory.InitializeEventProxy<IEventTestInterface>(ProxyFactory.CreateProxy<IEventTestInterface>(), interceptor);
 
             interfaceObj.TestEvent3 += Handler;
             Assert.True(interceptor.Subscribed);
@@ -40,7 +42,8 @@ namespace CodeElements.NetworkCallTransmission.Test.Proxy
         public void TestCreateEventProxyRaise()
         {
             var interceptor = new TestInterceptor();
-            var interfaceObj = ProxyFactory.CreateProxy<IEventTestInterface>(interceptor);
+            var interfaceObj =
+                ProxyFactory.InitializeEventProxy<IEventTestInterface>(ProxyFactory.CreateProxy<IEventTestInterface>(), interceptor);
             var raised = false;
             interfaceObj.TestEvent += (sender, s) => raised = true;
 
@@ -53,7 +56,8 @@ namespace CodeElements.NetworkCallTransmission.Test.Proxy
         public void TestCreateEventProxyRaiseWithParameter()
         {
             var interceptor = new TestInterceptor();
-            var interfaceObj = ProxyFactory.CreateProxy<IEventTestInterface>(interceptor);
+            var interfaceObj =
+                ProxyFactory.InitializeEventProxy<IEventTestInterface>(ProxyFactory.CreateProxy<IEventTestInterface>(), interceptor);
             var raised = false;
             interfaceObj.TestEvent3 += (sender, s) => raised = true;
 

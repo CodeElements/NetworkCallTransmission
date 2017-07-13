@@ -13,9 +13,9 @@ namespace CodeElements.NetworkCallTransmission.Test
             EventRegister = new EventRegister();
         }
 
-        protected void ConnectDefaultEventSubscriber(DefaultEventSubscriber defaultEventSubscriber)
+        protected void ConnectTestEventSubscriber(ITestEventSubscriber testEventSubscriber)
         {
-            defaultEventSubscriber.SendData += DefaultEventSubscriberOnSendData;
+            testEventSubscriber.SendData += DefaultEventSubscriberOnSendData;
         }
 
         private void DefaultEventSubscriberOnSendData(object sender, ResponseData responseData)
@@ -27,7 +27,12 @@ namespace CodeElements.NetworkCallTransmission.Test
         }
     }
 
-    public class DefaultEventSubscriber : IEventSubscriber
+    public interface ITestEventSubscriber
+    {
+        event EventHandler<ResponseData> SendData;
+    }
+
+    public class DefaultEventSubscriber : IEventSubscriber, ITestEventSubscriber
     {
         public DefaultEventSubscriber()
         {
