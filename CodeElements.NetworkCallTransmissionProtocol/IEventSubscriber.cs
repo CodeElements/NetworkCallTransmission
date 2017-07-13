@@ -7,6 +7,8 @@ namespace CodeElements.NetworkCallTransmissionProtocol
     /// </summary>
     public interface IEventSubscriber
     {
+        bool CheckPermissions(int[] permissions, object parameter);
+
         /// <summary>
         ///     Trigger an event on the subscriber
         /// </summary>

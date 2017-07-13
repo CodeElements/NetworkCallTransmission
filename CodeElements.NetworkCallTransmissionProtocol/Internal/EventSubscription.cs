@@ -25,12 +25,16 @@ namespace CodeElements.NetworkCallTransmissionProtocol.Internal
 
             Subscriber = new List<IEventSubscriber>();
             SubscriberLock = new object();
+
+            var permissionsAttribute = eventInfo.GetCustomAttribute<EventPermissionsAttribute>();
+            RequiredPermissions = permissionsAttribute?.RequiredPermissions;
         }
 
         public ulong EventId { get; }
         public bool IsSubscribed { get; private set; }
         public List<IEventSubscriber> Subscriber { get; }
         public object SubscriberLock { get; }
+        public int[] RequiredPermissions { get; }
 
         public void Subscribe()
         {

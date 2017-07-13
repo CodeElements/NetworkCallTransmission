@@ -169,8 +169,14 @@ namespace CodeElements.NetworkCallTransmissionProtocol
                     subscriber = subscription.Subscriber.ToList(); //copy subscriber
                 }
 
+                //check permissions
+                var validSubscriber = subscription.RequiredPermissions == null
+                    ? subscriber
+                    : subscriber.Where(x => x.CheckPermissions(subscription.RequiredPermissions,
+                        eventProxyEventArgs.Parameter));
+
                 //await because the byte array may be modified by the clients (CustomOffset)
-                foreach (var eventClient in subscriber)
+                foreach (var eventClient in validSubscriber)
                     await eventClient.TriggerEvent(data, length).ConfigureAwait(false); //forget
             }
         }
