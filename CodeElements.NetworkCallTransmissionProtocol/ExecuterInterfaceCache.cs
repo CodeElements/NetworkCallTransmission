@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
-using System.Security.Cryptography;
 using System.Threading.Tasks;
 using CodeElements.NetworkCallTransmissionProtocol.Extensions;
 using CodeElements.NetworkCallTransmissionProtocol.Internal;
@@ -21,6 +20,11 @@ namespace CodeElements.NetworkCallTransmissionProtocol
 
         internal IReadOnlyDictionary<uint, MethodInvoker> MethodInvokers { get; }
 
+        /// <summary>
+        ///     Build the cache for a specific interface
+        /// </summary>
+        /// <typeparam name="TInterface">The interface which should be mirrored in the cache</typeparam>
+        /// <returns>Return the thread-safe cache instance</returns>
         public static ExecuterInterfaceCache Build<TInterface>()
         {
             var interfaceType = typeof(TInterface);
@@ -33,8 +37,6 @@ namespace CodeElements.NetworkCallTransmissionProtocol
                 throw new ArgumentException("The interface must at least provide one method.", nameof(TInterface));
 
             var methodInvokers = new Dictionary<uint, MethodInvoker>();
-            var md5 = MD5.Create();
-
             foreach (var methodInfo in methods)
             {
                 Type actualReturnType;

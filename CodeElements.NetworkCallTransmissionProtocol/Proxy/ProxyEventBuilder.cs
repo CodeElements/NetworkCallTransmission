@@ -27,7 +27,7 @@ namespace CodeElements.NetworkCallTransmissionProtocol.Proxy
                 typeof(IEventInterceptor).GetMethod(nameof(IEventInterceptor.EventUnsubscribed));
         }
 
-        public void CreateEvent(int eventIndex, Type interfaceType, FieldInfo interceptorField, EventInfo eventInfo, TypeBuilder typeBuilder)
+        public FieldBuilder CreateEvent(int eventIndex, Type interfaceType, FieldInfo interceptorField, EventInfo eventInfo, TypeBuilder typeBuilder)
         {
             MethodAttributes methodAttributes = MethodAttributes.Public | MethodAttributes.HideBySig |
                                                 MethodAttributes.SpecialName | MethodAttributes.Virtual;
@@ -58,7 +58,7 @@ namespace CodeElements.NetworkCallTransmissionProtocol.Proxy
             typeBuilder.DefineMethodOverride(addMethod, interfaceType.GetMethod(addMethodName));
             typeBuilder.DefineMethodOverride(removeMethod, interfaceType.GetMethod(remMethodName));
 
-            var raiseMethod = typeBuilder.DefineMethod("On" + eventInfo.Name,
+            /*var raiseMethod = typeBuilder.DefineMethod("On" + eventInfo.Name,
                 MethodAttributes.Public | MethodAttributes.HideBySig, CallingConventions.HasThis, null,
                 new[] {typeof(object)});
 
@@ -87,7 +87,9 @@ namespace CodeElements.NetworkCallTransmissionProtocol.Proxy
             il.Emit(OpCodes.Callvirt, eventInfo.EventHandlerType.GetMethod(nameof(EventHandler.Invoke)));
 
             il.MarkLabel(returnLabel);
-            il.Emit(OpCodes.Ret);
+            il.Emit(OpCodes.Ret);*/
+
+            return eventField;
         }
 
         private void EmitEventMethodBody(MethodBuilder methodBuilder, int eventIndex, EventInfo eventInfo, FieldBuilder eventField, bool remove)

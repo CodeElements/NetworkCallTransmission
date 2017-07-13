@@ -53,18 +53,22 @@
     <Compile Include="CallTransmission.cs" />
     <Compile Include="DataTransmitter.cs" />
     <Compile Include="EventManager.cs" />
-    <Compile Include="EventProvider.cs" />
+    <Compile Include="IEventManager.cs" />
+    <Compile Include="Internal\EventProxyEventArgs.cs" />
+    <Compile Include="Internal\EventSubscriber.cs" />
+    <Compile Include="Internal\EventSubscription.cs" />
+    <Compile Include="IEventSubscriber.cs" />
+    <Compile Include="Internal\EventProvider.cs" />
     <Compile Include="EventRegister.cs" />
     <Compile Include="Exceptions\ExceptionSerializer.cs" />
     <Compile Include="Extensions\MurmurHash.cs" />
     <Compile Include="IEventProvider.cs" />
-    <Compile Include="IEventTrigger.cs" />
+    <Compile Include="Internal\IEventTrigger.cs" />
     <Compile Include="Internal\EventPackageType.cs" />
     <Compile Include="Internal\EventResponseType.cs" />
     <Compile Include="Proxy\DefaultMethodEmitter.cs" />
     <Compile Include="Proxy\DisposeProxyBuilder.cs" />
     <Compile Include="Proxy\EventInterceptorImplementor.cs" />
-    <Compile Include="Proxy\EventProviderImplementor.cs" />
     <Compile Include="Proxy\IAsyncInterceptor.cs" />
     <Compile Include="Proxy\IEventInterceptor.cs" />
     <Compile Include="Proxy\IEventInterceptorProxy.cs" />
@@ -90,6 +94,7 @@
     <Compile Include="ResponseData.cs" />
     <Compile Include="Internal\CallTransmissionResponseType.cs" />
     <Compile Include="Internal\ResultCallback.cs" />
+    <Compile Include="Internal\SubscribedEventInfo.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="app.config" />

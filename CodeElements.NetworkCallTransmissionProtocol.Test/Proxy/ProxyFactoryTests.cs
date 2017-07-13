@@ -37,46 +37,29 @@ namespace CodeElements.NetworkCallTransmissionProtocol.Test.Proxy
         }
 
         [Fact]
-        public void TestCreateEventProxyDispose()
+        public void TestCreateEventProxyRaise()
         {
             var interceptor = new TestInterceptor();
             var interfaceObj = ProxyFactory.CreateProxy<IEventTestInterface>(interceptor);
-            Assert.False(interceptor.Disposed);
-            interfaceObj.Dispose();
-            Assert.True(interceptor.Disposed);
+            var raised = false;
+            interfaceObj.TestEvent += (sender, s) => raised = true;
+
+            var raiser = (IEventInterceptorProxy) interfaceObj;
+            raiser.TriggerEvent(0, null);
+            Assert.True(raised);
         }
 
         [Fact]
-        public void TestCreateEventProxyRaise()
+        public void TestCreateEventProxyRaiseWithParameter()
         {
             var interceptor = new TestInterceptor();
             var interfaceObj = ProxyFactory.CreateProxy<IEventTestInterface>(interceptor);
             var raised = false;
             interfaceObj.TestEvent3 += (sender, s) => raised = true;
 
-            var method = interfaceObj.GetType().GetMethod("OnTestEvent3");
-            method.Invoke(interfaceObj, new[] {"asd"});
+            var raiser = (IEventInterceptorProxy) interfaceObj;
+            raiser.TriggerEvent(1, "asd");
             Assert.True(raised);
-        }
-
-        [Fact]
-        public void TestCreateEventSuspend()
-        {
-            var interceptor = new TestInterceptor();
-            var interfaceObj = ProxyFactory.CreateProxy<IEventTestInterface>(interceptor);
-            Assert.False(interceptor.Suspended);
-            interfaceObj.SuspendSubscribing();
-            Assert.True(interceptor.Suspended);
-        }
-
-        [Fact]
-        public void TestCreateEventResume()
-        {
-            var interceptor = new TestInterceptor();
-            var interfaceObj = ProxyFactory.CreateProxy<IEventTestInterface>(interceptor);
-            Assert.False(interceptor.Resumed);
-            interfaceObj.ResumeSubscribing();
-            Assert.True(interceptor.Resumed);
         }
 
         [Fact]
@@ -143,10 +126,10 @@ namespace CodeElements.NetworkCallTransmissionProtocol.Test.Proxy
         Task Test();
     }
 
-    public interface IEventTestInterface : IEventProvider
+    public interface IEventTestInterface
     {
         event EventHandler TestEvent;
-        event ResolveEventHandler TestEvent2;
+        //event ResolveEventHandler TestEvent2;
         event EventHandler<string> TestEvent3;
     }
 }

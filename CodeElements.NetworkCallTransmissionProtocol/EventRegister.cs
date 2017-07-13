@@ -2,135 +2,16 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
-using System.Linq.Expressions;
-using System.Reflection;
 using System.Threading;
-using System.Threading.Tasks;
-using CodeElements.NetworkCallTransmissionProtocol.Extensions;
 using CodeElements.NetworkCallTransmissionProtocol.Internal;
 using ZeroFormatter;
 
 namespace CodeElements.NetworkCallTransmissionProtocol
 {
-    internal class EventProxyEventArgs : EventArgs
-    {
-        public EventProxyEventArgs(ulong eventId, object parameter)
-        {
-            EventId = eventId;
-            Parameter = parameter;
-        }
-
-        public ulong EventId { get; }
-        public object Parameter { get; }
-    }
-
-    internal class EventSubscription
-    {
-        private readonly MethodInfo _addMethod;
-        private readonly Delegate _dynamicHandler;
-        private readonly object _obj;
-        private readonly MethodInfo _removeMethod;
-        private readonly object _subscribeLock = new object();
-
-        public EventSubscription(EventInfo eventInfo, ulong eventId, Action<object[]> handler, object obj)
-        {
-            _obj = obj;
-            EventId = eventId;
-            _dynamicHandler = BuildDynamicHandler(eventInfo.EventHandlerType, handler, eventId);
-
-            _addMethod = eventInfo.GetAddMethod();
-            _removeMethod = eventInfo.GetRemoveMethod();
-
-            Subscriber = new List<IEventSubscriber>();
-            SubscriberLock = new object();
-        }
-
-        public ulong EventId { get; }
-        public bool IsSubscribed { get; private set; }
-        public List<IEventSubscriber> Subscriber { get; }
-        public object SubscriberLock { get; }
-
-        public void Subscribe()
-        {
-            if (IsSubscribed)
-                return;
-
-            lock (_subscribeLock)
-            {
-                if (IsSubscribed)
-                    return;
-
-                _addMethod.Invoke(_obj, new object[] {_dynamicHandler});
-                IsSubscribed = true;
-            }
-        }
-
-        public void Unsubscribe()
-        {
-            if (!IsSubscribed)
-                return;
-
-            lock (_subscribeLock)
-            {
-                if (!IsSubscribed)
-                    return;
-
-                _removeMethod.Invoke(_obj, new object[] {_dynamicHandler});
-                IsSubscribed = false;
-            }
-        }
-
-        private static Delegate BuildDynamicHandler(Type delegateType, Action<object[]> func, ulong id)
-        {
-            var invokeMethod = delegateType.GetMethod(nameof(EventHandler.Invoke));
-            var parms = invokeMethod.GetParameters().Select(parm => Expression.Parameter(parm.ParameterType, parm.Name))
-                .ToArray();
-            var instance = func.Target == null ? null : Expression.Constant(func.Target);
-            var converted = parms.Select(parm => (Expression) Expression.Convert(parm, typeof(object))).ToList();
-            converted.Insert(0, Expression.Convert(Expression.Constant(id), typeof(object)));
-
-            var call = Expression.Call(instance, func.Method, Expression.NewArrayInit(typeof(object), converted));
-            var expr = Expression.Lambda(delegateType, call, parms);
-            return expr.Compile();
-        }
-    }
-
-    internal class EventSubscriber
-    {
-        public EventSubscriber(object eventProvider, Type type, uint sessionId)
-        {
-            var events = type.GetEvents();
-            AvailableEvents = new EventSubscription[events.Length];
-            for (var i = 0; i < events.Length; i++)
-            {
-                var eventInfo = events[i];
-                AvailableEvents[i] = new EventSubscription(eventInfo, eventInfo.GetEventId(type, sessionId),
-                    EventHandler, eventProvider);
-            }
-
-            Id = sessionId;
-        }
-
-        public uint Id { get; }
-        public EventSubscription[] AvailableEvents { get; }
-
-        public event EventHandler<EventProxyEventArgs> EventRaised;
-
-        private void EventHandler(object[] objects)
-        {
-            var eventId = (ulong) objects[0];
-
-            object parameter;
-            //objects[1] is the instance
-            if (objects.Length > 2)
-                parameter = objects[2] == EventArgs.Empty ? null : objects[2];
-            else
-                parameter = null;
-
-            EventRaised?.Invoke(this, new EventProxyEventArgs(eventId, parameter));
-        }
-    }
-
+    /// <summary>
+    ///     Let classes register their events to make them available to the remote side. The counterpart is
+    ///     <see cref="EventManager" />
+    /// </summary>
     public class EventRegister
     {
         private const int EstimatedParameterSize = 200;
@@ -138,6 +19,9 @@ namespace CodeElements.NetworkCallTransmissionProtocol
         private readonly ConcurrentDictionary<ulong, EventSubscription> _events;
         private int _eventIdCounter;
 
+        /// <summary>
+        ///     Initialize a new instance of <see cref="EventRegister" />
+        /// </summary>
         public EventRegister()
         {
             _events = new ConcurrentDictionary<ulong, EventSubscription>();
@@ -153,19 +37,35 @@ namespace CodeElements.NetworkCallTransmissionProtocol
         /// <summary>
         ///     Register events
         /// </summary>
-        /// <typeparam name="TEventInterface"></typeparam>
-        /// <param name="eventInterface"></param>
-        public void RegisterEvents<TEventInterface>(TEventInterface eventInterface)
+        /// <typeparam name="TEventInterface">
+        ///     The event contract interface which defines the events. Please note that all events
+        ///     must be an <see cref="EventHandler" /> or <see cref="EventHandler{TEventArgs}" />.
+        /// </typeparam>
+        /// <param name="eventProvider">The instance of <see cref="TEventInterface"/> which calls the events</param>
+        public void RegisterEvents<TEventInterface>(TEventInterface eventProvider) where TEventInterface : class
         {
-            var eventSubscriber = new EventSubscriber(eventInterface, typeof(TEventInterface), 0);
+            var interfaceType = typeof(TEventInterface);
+            if (!interfaceType.IsInterface)
+                throw new ArgumentException("TEventInterface must be an interface", nameof(TEventInterface));
+
+            var eventSubscriber = new EventSubscriber(eventProvider, typeof(TEventInterface), 0);
             AddEventSubscriber(eventSubscriber);
         }
 
-        public uint RegisterPrivateEvents<TEventInterface>(TEventInterface eventInterface)
+        /// <summary>
+        ///     Register private events with a session id
+        /// </summary>
+        /// <typeparam name="TEventInterface">
+        ///     The event contract interface which defines the events. Please note that all events
+        ///     must be an <see cref="EventHandler" /> or <see cref="EventHandler{TEventArgs}" />.
+        /// </typeparam>
+        /// <param name="eventProvider">The instance of <see cref="TEventInterface"/> which calls the events</param>
+        /// <returns>Return the session id</returns>
+        public uint RegisterPrivateEvents<TEventInterface>(TEventInterface eventProvider)
         {
             var id = (uint) Interlocked.Increment(ref _eventIdCounter);
 
-            var eventSubscriber = new EventSubscriber(eventInterface, typeof(TEventInterface), id);
+            var eventSubscriber = new EventSubscriber(eventProvider, typeof(TEventInterface), id);
             AddEventSubscriber(eventSubscriber);
 
             return id;
@@ -274,10 +174,5 @@ namespace CodeElements.NetworkCallTransmissionProtocol
                     await eventClient.TriggerEvent(data, length).ConfigureAwait(false); //forget
             }
         }
-    }
-
-    public interface IEventSubscriber
-    {
-        Task TriggerEvent(byte[] data, int length);
     }
 }

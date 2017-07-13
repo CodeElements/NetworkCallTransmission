@@ -16,11 +16,13 @@ using ZeroFormatter;
 namespace CodeElements.NetworkCallTransmissionProtocol
 {
     /// <summary>
-    ///     The client side of the network protocol. Provides the class which mapps the interface methods to the remote methods
+    ///     The client side of the network protocol. Provides the class which mapps the interface methods to the remote
+    ///     methods. The counterpart is <see cref="CallTransmissionExecuter{TInterface}" />
     /// </summary>
     /// <typeparam name="TInterface">The remote interface. The receiving site must have the same interface available.</typeparam>
     public class CallTransmission<TInterface> : DataTransmitter, IDisposable, IAsyncInterceptor
     {
+        private const int EstimatedDataPerParameter = 200;
         // ReSharper disable once StaticMemberInGenericType
 
         private readonly ConcurrentDictionary<uint, ResultCallback> _callbacks;
@@ -29,7 +31,6 @@ namespace CodeElements.NetworkCallTransmissionProtocol
         private int _callIdCounter;
         private bool _isDisposed;
         private IReadOnlyDictionary<MethodInfo, MethodCache> _methods;
-        private const int EstimatedDataPerParameter = 200;
 
         /// <summary>
         ///     Initialize a new instance of <see cref="CallTransmission{TInterface}" />
@@ -47,20 +48,6 @@ namespace CodeElements.NetworkCallTransmissionProtocol
             InitializeInterface(typeof(TInterface));
 
             _callbacks = new ConcurrentDictionary<uint, ResultCallback>();
-        }
-
-        /// <summary>Performs application-defined tasks associated with freeing, releasing, or resetting unmanaged resources.</summary>
-        public void Dispose()
-        {
-            if (!_isDisposed)
-            {
-                _isDisposed = true;
-
-                _md5?.Dispose();
-                foreach (var key in _callbacks.Keys)
-                    if (_callbacks.TryRemove(key, out var resultCallback))
-                        resultCallback.Dispose();
-            }
         }
 
         /// <summary>
@@ -104,8 +91,22 @@ namespace CodeElements.NetworkCallTransmissionProtocol
             });
         }
 
+        /// <summary>Performs application-defined tasks associated with freeing, releasing, or resetting unmanaged resources.</summary>
+        public void Dispose()
+        {
+            if (!_isDisposed)
+            {
+                _isDisposed = true;
+
+                _md5?.Dispose();
+                foreach (var key in _callbacks.Keys)
+                    if (_callbacks.TryRemove(key, out var resultCallback))
+                        resultCallback.Dispose();
+            }
+        }
+
         /// <summary>
-        /// Receive data from a <see cref="CallTransmissionExecuter{TInterface}"/>
+        ///     Receive data from a <see cref="CallTransmissionExecuter{TInterface}" />
         /// </summary>
         /// <param name="data">An array of bytes</param>
         /// <param name="offset">The starting position within the buffer</param>
@@ -182,7 +183,7 @@ namespace CodeElements.NetworkCallTransmissionProtocol
             var callbackId = (uint) Interlocked.Increment(ref _callIdCounter);
 
             var buffer = new byte[CustomOffset /* user offset */ + 4 /* Header */ + 4 /* Callback id */ +
-                                  4 /* method id */ +  parameters.Length * 4 /* parameter meta */ +
+                                  4 /* method id */ + parameters.Length * 4 /* parameter meta */ +
                                   EstimatedDataPerParameter * parameters.Length /* parameter data */];
             var bufferOffset = CustomOffset + 12 + parameters.Length * 4;
 

@@ -5,9 +5,9 @@ using System.Reflection;
 using CodeElements.NetworkCallTransmissionProtocol.Extensions;
 using CodeElements.NetworkCallTransmissionProtocol.Proxy;
 
-namespace CodeElements.NetworkCallTransmissionProtocol
+namespace CodeElements.NetworkCallTransmissionProtocol.Internal
 {
-    public class EventProvider<TEvents> : IEventProvider<TEvents>, IEventInterceptor, IEventTrigger
+    internal class EventProvider<TEvents> : IEventProvider<TEvents>, IEventInterceptor, IEventTrigger
     {
         private readonly uint _eventSessionId;
         private readonly Type _eventInterface;
@@ -17,6 +17,8 @@ namespace CodeElements.NetworkCallTransmissionProtocol
         private readonly Dictionary<EventInfo, int> _subscribedEvents;
         private readonly object _eventSubscribingLock = new object();
         private readonly object _suspendingLock = new object();
+        private IEventInterceptorProxy _interceptorProxy;
+        private TEvents _events;
 
         public EventProvider(uint eventSessionId, Type eventInterface, EventManager eventManager)
         {
@@ -40,7 +42,15 @@ namespace CodeElements.NetworkCallTransmissionProtocol
             _eventManager.UnsubscribeEvents(this, events);
         }
 
-        public TEvents Events { get; set; }
+        public TEvents Events
+        {
+            get => _events;
+            set
+            {
+                _events = value;
+                _interceptorProxy = value as IEventInterceptorProxy;
+            }
+        }
 
         public void EventSubscribed(EventInfo eventInfo)
         {
@@ -59,7 +69,7 @@ namespace CodeElements.NetworkCallTransmissionProtocol
 
         private void SubscribeToEvents(IEnumerable<EventInfo> events)
         {
-            var eventsToSubscribe = new List<ulong>();
+            var eventsToSubscribe = new List<Tuple<EventInfo, ulong>>();
 
             lock (_eventSubscribingLock)
             {
@@ -70,7 +80,8 @@ namespace CodeElements.NetworkCallTransmissionProtocol
                     else
                     {
                         _subscribedEvents.Add(eventInfo, 1);
-                        eventsToSubscribe.Add(eventInfo.GetEventId(_eventInterface, _eventSessionId));
+                        eventsToSubscribe.Add(
+                            new Tuple<EventInfo, ulong>(eventInfo, eventInfo.GetEventId(_eventInterface, _eventSessionId)));
                     }
                 }
             }
@@ -118,6 +129,12 @@ namespace CodeElements.NetworkCallTransmissionProtocol
             }
 
             SubscribeToEvents(eventsToSubscribe);
+        }
+
+        public void TriggerEvent(EventInfo eventInfo, object parameter)
+        {
+            var eventIndex = Array.IndexOf(_interceptorProxy.Events, eventInfo);
+            _interceptorProxy.TriggerEvent(eventIndex, parameter);
         }
     }
 }

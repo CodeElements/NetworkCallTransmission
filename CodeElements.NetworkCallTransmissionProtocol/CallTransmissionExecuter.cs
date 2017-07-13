@@ -7,13 +7,13 @@ using ZeroFormatter;
 namespace CodeElements.NetworkCallTransmissionProtocol
 {
     /// <summary>
-    ///     The server side of the network protocol
+    ///     The server side of the network protocol. The counterpart is <see cref="CallTransmission{TInterface}" />
     /// </summary>
     /// <typeparam name="TInterface">The remote interface. The receiving site must have the same interface available.</typeparam>
     public class CallTransmissionExecuter<TInterface>
     {
-        private readonly TInterface _interfaceImplementation;
         private const int EstimatedResultBufferSize = 1000;
+        private readonly TInterface _interfaceImplementation;
 
         /// <summary>
         ///     Initialize a new instance of <see cref="CallTransmissionExecuter{TInterface}" />
@@ -99,7 +99,7 @@ namespace CodeElements.NetworkCallTransmissionProtocol
             var parameters = new object[methodInvoker.ParameterCount];
             var parameterOffset = offset + 8 + parameters.Length * 4;
 
-            for (int i = 0; i < methodInvoker.ParameterCount; i++)
+            for (var i = 0; i < methodInvoker.ParameterCount; i++)
             {
                 var type = methodInvoker.ParameterTypes[i];
                 var parameterLength = BitConverter.ToInt32(buffer, offset + 8 + i * 4);
@@ -117,7 +117,8 @@ namespace CodeElements.NetworkCallTransmissionProtocol
             catch (Exception e)
             {
                 var data = ExceptionSerializer.Serialize(e);
-                var response = new byte[CustomOffset /* user offset */ + 8 /* Header */ + 1 /* response type */ + data.Length /* exception */];
+                var response = new byte[CustomOffset /* user offset */ + 8 /* Header */ + 1 /* response type */ +
+                                        data.Length /* exception */];
                 WriteResponseHeader(response);
                 response[CustomOffset + 8] = (byte) CallTransmissionResponseType.Exception;
                 Buffer.BlockCopy(data, 0, response, CustomOffset + 9, data.Length);
@@ -133,7 +134,8 @@ namespace CodeElements.NetworkCallTransmissionProtocol
                 response[CustomOffset + 8] = (byte) CallTransmissionResponseType.ResultReturned;
 
                 var responseLength =
-                    ZeroFormatterSerializer.NonGeneric.Serialize(methodInvoker.ReturnType, ref response, CustomOffset + 9, result);
+                    ZeroFormatterSerializer.NonGeneric.Serialize(methodInvoker.ReturnType, ref response,
+                        CustomOffset + 9, result);
                 return new ResponseData(response, responseLength + CustomOffset + 9);
             }
             else

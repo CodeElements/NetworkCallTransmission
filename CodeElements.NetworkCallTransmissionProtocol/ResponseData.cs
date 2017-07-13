@@ -1,18 +1,29 @@
 namespace CodeElements.NetworkCallTransmissionProtocol
 {
+    /// <summary>
+    ///     Contains information which must be sent to the counterpart for the services to work
+    /// </summary>
     public class ResponseData
     {
-        public ResponseData(byte[] data, int length)
+        internal ResponseData(byte[] data, int length)
         {
             Data = data;
             Length = length;
         }
 
-        public ResponseData(byte[] data) : this(data, data.Length)
+        internal ResponseData(byte[] data) : this(data, data.Length)
         {
         }
 
+        /// <summary>
+        ///     The data which should be sent
+        /// </summary>
         public byte[] Data { get; }
+
+        /// <summary>
+        ///     The length of the data that should be sent. Please note that the length of <see cref="Data" /> may be greater due
+        ///     to smaller data than expected
+        /// </summary>
         public int Length { get; }
     }
 }

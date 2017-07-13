@@ -17,16 +17,17 @@ namespace CodeElements.NetworkCallTransmissionProtocol.Proxy
             eventInterceptorImplementor.ImplementProxy(typeBuilder);
 
 	        var events = GetEvents(interfaceList);
+            var eventFields = new FieldBuilder[events.Count];
 
             var builder = new ProxyEventBuilder();
 	        for (var index = 0; index < events.Count; index++)
 	        {
 	            var eventInfo = events[index];
-	            builder.CreateEvent(index, typeof(T), eventInterceptorImplementor.InterceptorField, eventInfo,
-	                typeBuilder);
+	            eventFields[index] = builder.CreateEvent(index, typeof(T), eventInterceptorImplementor.InterceptorField,
+	                eventInfo, typeBuilder);
 	        }
 
-            //EventProviderImplementor.Implement(typeBuilder);
+            eventInterceptorImplementor.ImplementTriggerEvent(typeBuilder, eventFields, events);
 
 	        var proxyType = typeBuilder.CreateType();
             assemblyBuilder.Save("test.dll");

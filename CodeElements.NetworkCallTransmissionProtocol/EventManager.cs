@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
 using System.Threading;
@@ -11,36 +10,52 @@ using ZeroFormatter;
 
 namespace CodeElements.NetworkCallTransmissionProtocol
 {
-    internal class SubscribedEventInfo
-    {
-        public SubscribedEventInfo(EventInfo eventInfo)
-        {
-            EventInfo = eventInfo;
-            Triggers = new List<IEventTrigger>();
-            TriggersLock = new object();
-
-            if (eventInfo.EventHandlerType.IsGenericTypeDefinition)
-                EventHandlerParameterType = eventInfo.EventHandlerType.GetGenericArguments()[0];
-        }
-
-        public List<IEventTrigger> Triggers { get; }
-        public EventInfo EventInfo { get; }
-        public Type EventHandlerParameterType { get; }
-        public object TriggersLock { get; }
-    }
-
-    public class EventManager : DataTransmitter
+    /// <summary>
+    ///     Provides methods to subscribe to the remote events. The counterpart is <see cref="EventRegister" />
+    /// </summary>
+    public class EventManager : DataTransmitter, IEventManager
     {
         private readonly ConcurrentDictionary<ulong, SubscribedEventInfo> _subscribedEvents;
-        private readonly object _methodCallsAddLock = new object();
 
+        /// <summary>
+        ///     Initialize a new instance of <see cref="EventManager" />
+        /// </summary>
         public EventManager()
         {
             _subscribedEvents = new ConcurrentDictionary<ulong, SubscribedEventInfo>();
         }
 
         /// <summary>
-        /// Receive data from a <see cref="EventRegister"/>
+        ///     Get events from the remote side
+        /// </summary>
+        /// <typeparam name="TEventInterface">
+        ///     The event contract interface which defines the events. Please note that all events
+        ///     must be an <see cref="EventHandler" /> or <see cref="EventHandler{TEventArgs}" />.
+        /// </typeparam>
+        /// <returns>Return an <see cref="IEventProvider{TEventInterface}" /> which manages the events</returns>
+        public IEventProvider<TEventInterface> GetEvents<TEventInterface>()
+        {
+            return GetEvents<TEventInterface>(0);
+        }
+
+        /// <summary>
+        ///     Get events from the remote side from a session
+        /// </summary>
+        /// <typeparam name="TEventInterface">
+        ///     The event contract interface which defines the events. Please note that all events
+        ///     must be an <see cref="EventHandler" /> or <see cref="EventHandler{TEventArgs}" />.
+        /// </typeparam>
+        /// <param name="eventSessionId">The session id the events were registered with</param>
+        /// <returns>Return an <see cref="IEventProvider{TEventInterface}" /> which manages the events</returns>
+        public IEventProvider<TEventInterface> GetEvents<TEventInterface>(uint eventSessionId)
+        {
+            var provider = new EventProvider<TEventInterface>(eventSessionId, typeof(TEventInterface), this);
+            provider.Events = ProxyFactory.CreateProxy<TEventInterface>(provider);
+            return provider;
+        }
+
+        /// <summary>
+        ///     Receive data from a <see cref="EventRegister" />
         /// </summary>
         /// <param name="data">An array of bytes</param>
         /// <param name="offset">The starting position within the buffer</param>
@@ -63,32 +78,20 @@ namespace CodeElements.NetworkCallTransmissionProtocol
                         triggers = subscribedEvent.Triggers.ToList(); //copy list
                     }
 
+                    object parameter;
                     if (withParameter)
-                    {
-                        var parameter =
+                        parameter =
                             ZeroFormatterSerializer.NonGeneric.Deserialize(subscribedEvent.EventHandlerParameterType,
                                 data, 9);
-                        foreach (var eventTrigger in triggers)
-                        {
-                            eventTrigger.GetType()
-                        }
-                    }
+                    else
+                        parameter = null;
+
+                    foreach (var eventTrigger in triggers)
+                        eventTrigger.TriggerEvent(subscribedEvent.EventInfo, parameter);
                     break;
                 default:
                     throw new ArgumentOutOfRangeException();
             }
-        }
-
-        public IEventProvider<TEventInterface> GetEvents<TEventInterface>()
-        {
-            return GetEvents<TEventInterface>(0);
-        }
-
-        public IEventProvider<TEventInterface> GetEvents<TEventInterface>(uint eventSessionId)
-        {
-            var provider = new EventProvider<TEventInterface>(eventSessionId, typeof(TEventInterface), this);
-            provider.Events = ProxyFactory.CreateProxy<TEventInterface>(provider);
-            return provider;
         }
 
         internal void SubscribeEvents(IEventTrigger eventTrigger, IEnumerable<Tuple<EventInfo, ulong>> events)
@@ -97,11 +100,14 @@ namespace CodeElements.NetworkCallTransmissionProtocol
 
             foreach (var eventKey in events)
             {
-                var subscribedInfo = new Lazy<SubscribedEventInfo>(() => new SubscribedEventInfo(eventKey.Item1), LazyThreadSafetyMode.None);
+                var subscribedInfo = new Lazy<SubscribedEventInfo>(() => new SubscribedEventInfo(eventKey.Item1),
+                    LazyThreadSafetyMode.None);
                 var addedSubscribedInfo = _subscribedEvents.GetOrAdd(eventKey.Item2, l => subscribedInfo.Value);
 
                 lock (addedSubscribedInfo.TriggersLock)
+                {
                     addedSubscribedInfo.Triggers.Add(eventTrigger);
+                }
 
                 if (subscribedInfo.IsValueCreated)
                     eventsToRegister.Add(eventKey.Item2);
@@ -116,9 +122,7 @@ namespace CodeElements.NetworkCallTransmissionProtocol
             var eventsToUnregister = new List<ulong>();
 
             foreach (var eventKey in events)
-            {
                 if (_subscribedEvents.TryGetValue(eventKey, out var subscribedEventInfo))
-                {
                     lock (subscribedEventInfo.TriggersLock)
                     {
                         subscribedEventInfo.Triggers.Remove(eventTrigger);
@@ -128,8 +132,6 @@ namespace CodeElements.NetworkCallTransmissionProtocol
                             _subscribedEvents.TryRemove(eventKey, out var _);
                         }
                     }
-                }
-            }
 
             if (eventsToUnregister.Count > 0)
                 SendEventAction(false, eventsToUnregister);

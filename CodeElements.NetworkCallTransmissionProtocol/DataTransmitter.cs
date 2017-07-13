@@ -10,6 +10,9 @@ namespace CodeElements.NetworkCallTransmissionProtocol
     /// <returns>Return the task which completes once the package is sent</returns>
     public delegate Task SendDataDelegate(ResponseData data);
 
+    /// <summary>
+    ///     Defines an abstract class which received and transmits data from a remote side
+    /// </summary>
     public abstract class DataTransmitter
     {
         /// <summary>
@@ -24,7 +27,7 @@ namespace CodeElements.NetworkCallTransmissionProtocol
         public SendDataDelegate SendData { get; set; }
 
         /// <summary>
-        /// Receive data
+        ///     Receive data
         /// </summary>
         /// <param name="data">An array of bytes</param>
         /// <param name="offset">The starting position within the buffer</param>
