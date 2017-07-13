@@ -53,6 +53,7 @@
     <Compile Include="CallTransmission.cs" />
     <Compile Include="DataTransmitter.cs" />
     <Compile Include="EventManager.cs" />
+    <Compile Include="EventPermissionsAttribute.cs" />
     <Compile Include="IEventManager.cs" />
     <Compile Include="Internal\EventProxyEventArgs.cs" />
     <Compile Include="Internal\EventSubscriber.cs" />
