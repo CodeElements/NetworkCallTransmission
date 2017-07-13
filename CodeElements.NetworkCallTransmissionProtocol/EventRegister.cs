@@ -171,10 +171,26 @@ namespace CodeElements.NetworkCallTransmissionProtocol
                 }
 
                 //check permissions
-                var validSubscriber = subscription.RequiredPermissions == null
-                    ? subscriber
-                    : subscriber.Where(x => x.CheckPermissions(subscription.RequiredPermissions,
-                        eventProxyEventArgs.Parameter));
+                IEnumerable<IEventSubscriber> validSubscriber;
+                if (subscription.RequiredPermissions == null)
+                    validSubscriber = subscriber;
+                else
+                {
+                    var subscriberTasks = subscriber
+                        .Select(x => new Tuple<Task<bool>, IEventSubscriber>(
+                            x.CheckPermissions(subscription.RequiredPermissions, eventProxyEventArgs.Parameter), x))
+                        .ToList();
+                    var results = await Task.WhenAll(subscriberTasks.Select(x => x.Item1)).ConfigureAwait(false);
+
+                    var validSubscriberList = new List<IEventSubscriber>();
+                    for (int i = 0; i < subscriberTasks.Count; i++)
+                    {
+                        if (results[i])
+                            validSubscriberList.Add(subscriberTasks[i].Item2);
+                    }
+
+                    validSubscriber = validSubscriberList;
+                }
 
                 //await because the byte array may be modified by the clients (CustomOffset)
                 foreach (var eventClient in validSubscriber)
