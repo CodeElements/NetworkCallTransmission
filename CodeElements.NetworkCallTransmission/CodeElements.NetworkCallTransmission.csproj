@@ -52,8 +52,10 @@
     <Compile Include="CallTransmissionExecuter.cs" />
     <Compile Include="CallTransmission.cs" />
     <Compile Include="DataTransmitter.cs" />
+    <Compile Include="EventFilters\TypedEventFilter.cs" />
     <Compile Include="EventManager.cs" />
     <Compile Include="EventPermissionsAttribute.cs" />
+    <Compile Include="IEventFilter.cs" />
     <Compile Include="IEventManager.cs" />
     <Compile Include="Internal\EventProxyEventArgs.cs" />
     <Compile Include="Internal\EventSubscriber.cs" />

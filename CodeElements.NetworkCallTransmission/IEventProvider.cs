@@ -26,5 +26,11 @@ namespace CodeElements.NetworkCallTransmission
         ///     transmitted.
         /// </summary>
         void ResumeSubscribing();
+
+        /// <summary>
+        ///     Add a new event filter
+        /// </summary>
+        /// <param name="eventFilter">The filter which determines which events should be triggered</param>
+        void AddFilter(IEventFilter eventFilter);
     }
 }

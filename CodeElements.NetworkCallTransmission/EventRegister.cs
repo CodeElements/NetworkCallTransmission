@@ -144,57 +144,67 @@ namespace CodeElements.NetworkCallTransmission
         {
             if (_events.TryGetValue(eventProxyEventArgs.EventId, out var subscription))
             {
-                byte[] data;
-                int length;
+                byte[] data = null;
+                int length = 0;
 
-                if (eventProxyEventArgs.Parameter == null)
+                void GetData()
                 {
-                    data = new byte[CustomOffset + 9];
-                    data[CustomOffset] = (byte) EventResponseType.TriggerEvent;
-                    Buffer.BlockCopy(BitConverter.GetBytes(eventProxyEventArgs.EventId), 0, data, CustomOffset + 1, 8);
-                    length = data.Length;
-                }
-                else
-                {
-                    data = new byte[EstimatedParameterSize + 9 + CustomOffset];
-                    data[CustomOffset] = (byte) EventResponseType.TriggerEventWithParameter;
-                    Buffer.BlockCopy(BitConverter.GetBytes(eventProxyEventArgs.EventId), 0, data, CustomOffset + 1, 8);
-                    length = CustomOffset + 9 +
-                             ZeroFormatterSerializer.NonGeneric.Serialize(eventProxyEventArgs.Parameter.GetType(),
-                                 ref data, CustomOffset + 9, eventProxyEventArgs.Parameter);
+                    if (eventProxyEventArgs.Parameter == null)
+                    {
+                        data = new byte[CustomOffset + 9];
+                        data[CustomOffset] = (byte)EventResponseType.TriggerEvent;
+                        Buffer.BlockCopy(BitConverter.GetBytes(eventProxyEventArgs.EventId), 0, data, CustomOffset + 1, 8);
+                        length = data.Length;
+                    }
+                    else
+                    {
+                        data = new byte[EstimatedParameterSize + 9 + CustomOffset];
+                        data[CustomOffset] = (byte)EventResponseType.TriggerEventWithParameter;
+                        Buffer.BlockCopy(BitConverter.GetBytes(eventProxyEventArgs.EventId), 0, data, CustomOffset + 1, 8);
+                        length = CustomOffset + 9 +
+                                 ZeroFormatterSerializer.NonGeneric.Serialize(eventProxyEventArgs.Parameter.GetType(),
+                                     ref data, CustomOffset + 9, eventProxyEventArgs.Parameter);
+                    }
                 }
 
-                List<IEventSubscriber> subscriber;
+                List<IEventSubscriber> subscribers;
                 lock (subscription.SubscriberLock)
                 {
-                    subscriber = subscription.Subscriber.ToList(); //copy subscriber
+                    subscribers = subscription.Subscriber.ToList(); //copy subscriber
                 }
 
                 //check permissions
-                IEnumerable<IEventSubscriber> validSubscriber;
                 if (subscription.RequiredPermissions == null)
-                    validSubscriber = subscriber;
+                {
+                    foreach (var subscriber in subscribers)
+                    {
+                        if (data == null) GetData();
+
+                        //await because the byte array may be modified by the clients (CustomOffset)
+                        await subscriber.TriggerEvent(data, length).ConfigureAwait(false);
+                    }
+                }
                 else
                 {
-                    var subscriberTasks = subscriber
-                        .Select(x => new Tuple<Task<bool>, IEventSubscriber>(
-                            x.CheckPermissions(subscription.RequiredPermissions, eventProxyEventArgs.Parameter), x))
-                        .ToList();
-                    var results = await Task.WhenAll(subscriberTasks.Select(x => x.Item1)).ConfigureAwait(false);
+                    var subscriberTaskDictionary = subscribers.ToDictionary(x => x.CheckPermissions(subscription.RequiredPermissions, eventProxyEventArgs.Parameter), y => y);
+                    var tasks = subscriberTaskDictionary.Select(x => x.Key).ToList();
 
-                    var validSubscriberList = new List<IEventSubscriber>();
-                    for (int i = 0; i < subscriberTasks.Count; i++)
+                    while (tasks.Count > 0)
                     {
-                        if (results[i])
-                            validSubscriberList.Add(subscriberTasks[i].Item2);
+                        var finishedTask = await Task.WhenAny(tasks).ConfigureAwait(false);
+                        var subscriber = subscriberTaskDictionary[finishedTask];
+                        subscriberTaskDictionary.Remove(finishedTask);
+                        tasks.Remove(finishedTask);
+
+                        if (finishedTask.Result)
+                        {
+                            if (data == null) GetData();
+
+                            //await because the byte array may be modified by the clients (CustomOffset)
+                            await subscriber.TriggerEvent(data, length).ConfigureAwait(false);
+                        }
                     }
-
-                    validSubscriber = validSubscriberList;
                 }
-
-                //await because the byte array may be modified by the clients (CustomOffset)
-                foreach (var eventClient in validSubscriber)
-                    await eventClient.TriggerEvent(data, length).ConfigureAwait(false); //forget
             }
         }
     }

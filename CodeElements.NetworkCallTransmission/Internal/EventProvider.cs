@@ -19,6 +19,7 @@ namespace CodeElements.NetworkCallTransmission.Internal
         private readonly object _suspendingLock = new object();
         private IEventInterceptorProxy _interceptorProxy;
         private TEvents _events;
+        private readonly List<IEventFilter> _filters;
 
         public EventProvider(uint eventSessionId, Type eventInterface, EventManager eventManager)
         {
@@ -27,6 +28,7 @@ namespace CodeElements.NetworkCallTransmission.Internal
             _eventManager = eventManager;
             _waitingEvents = new Queue<EventInfo>();
             _subscribedEvents = new Dictionary<EventInfo, int>();
+            _filters = new List<IEventFilter>();
         }
 
         public void Dispose()
@@ -131,8 +133,16 @@ namespace CodeElements.NetworkCallTransmission.Internal
             SubscribeToEvents(eventsToSubscribe);
         }
 
+        public void AddFilter(IEventFilter eventFilter)
+        {
+            _filters.Add(eventFilter);
+        }
+
         public void TriggerEvent(EventInfo eventInfo, object parameter)
         {
+            if (_filters.Any(x => !x.FilterEvent(eventInfo, parameter)))
+                return;
+
             var eventIndex = Array.IndexOf(_interceptorProxy.Events, eventInfo);
             _interceptorProxy.TriggerEvent(eventIndex, parameter);
         }
