@@ -93,7 +93,7 @@ namespace CodeElements.NetworkCallTransmission
                     var events = new List<ulong>(eventCount);
 
                     for (var i = 0; i < eventCount; i++)
-                        events.Add(BitConverter.ToUInt64(data, 3 + i * 8));
+                        events.Add(BitConverter.ToUInt64(data, offset + 3 + i * 8));
 
                     foreach (var eventId in events)
                     {
@@ -159,7 +159,7 @@ namespace CodeElements.NetworkCallTransmission
                     else
                     {
                         data = new byte[EstimatedParameterSize + 9 + CustomOffset];
-                        data[CustomOffset] = (byte)EventResponseType.TriggerEventWithParameter;
+                        data[CustomOffset] = (byte) EventResponseType.TriggerEventWithParameter;
                         Buffer.BlockCopy(BitConverter.GetBytes(eventProxyEventArgs.EventId), 0, data, CustomOffset + 1, 8);
                         length = CustomOffset + 9 +
                                  ZeroFormatterSerializer.NonGeneric.Serialize(eventProxyEventArgs.Parameter.GetType(),
