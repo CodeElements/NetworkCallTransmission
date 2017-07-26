@@ -90,16 +90,16 @@ namespace CodeElements.NetworkCallTransmission.Test
     public interface IPermissionsTestEvents
     {
         [EventPermissions(1, 51)]
-        event EventHandler<TestObject> TestEvent;
+        event TransmittedEventHandler<TransmissionInfo, TestObject> TestEvent;
     }
 
     public class PermissionsTestEventsImpl : IPermissionsTestEvents
     {
-        public event EventHandler<TestObject> TestEvent;
+        public event TransmittedEventHandler<TransmissionInfo, TestObject> TestEvent;
 
         public void TriggerEvent(TestObject args)
         {
-            TestEvent?.Invoke(this, args);
+            TestEvent?.Invoke(TransmissionInfo.Empty, args);
         }
     }
 

@@ -14,9 +14,9 @@ namespace CodeElements.NetworkCallTransmission
         ///     The permissions which were specified in the <see cref="EventPermissionsAttribute" /> of the
         ///     event. Null if the event doesn't has that attribute.
         /// </param>
-        /// <param name="parameter">The parameter (args) of the event.</param>
+        /// <param name="transmissionInfo">The transmission info of the event.</param>
         /// <returns>Return a boolean indicating whether the event should be triggered (with <see cref="TriggerEvent" />) or not</returns>
-        Task<bool> CheckPermissions(int[] permissions, object parameter);
+        Task<bool> CheckPermissions(int[] permissions, object transmissionInfo);
 
         /// <summary>
         ///     Trigger an event on the subscriber

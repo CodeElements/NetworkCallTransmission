@@ -15,7 +15,8 @@ namespace CodeElements.NetworkCallTransmission
     /// </summary>
     public class EventRegister
     {
-        private const int EstimatedParameterSize = 200;
+        private const int EstimatedParameterSize = 150;
+        private const int EstimatedTransmissionInfoSize = 16;
         private readonly ConcurrentDictionary<IEventSubscriber, List<ulong>> _clients;
         private readonly ConcurrentDictionary<ulong, EventSubscription> _events;
         private int _eventIdCounter;
@@ -93,7 +94,7 @@ namespace CodeElements.NetworkCallTransmission
                     var events = new List<ulong>(eventCount);
 
                     for (var i = 0; i < eventCount; i++)
-                        events.Add(BitConverter.ToUInt64(data, 3 + i * 8));
+                        events.Add(BitConverter.ToUInt64(data, offset + 3 + i * 8));
 
                     foreach (var eventId in events)
                     {
@@ -149,21 +150,48 @@ namespace CodeElements.NetworkCallTransmission
 
                 void GetData()
                 {
-                    if (eventProxyEventArgs.Parameter == null)
+                    data = new byte[CustomOffset + 11 +
+                                    (eventProxyEventArgs.TransmissionInfo != null ? EstimatedTransmissionInfoSize : 0) +
+                                    (eventProxyEventArgs.Parameter != null ? EstimatedParameterSize : 0)];
+
+                    var transmissionInfoLength = 0;
+                    var parameterLength = 0;
+
+                    if (eventProxyEventArgs.TransmissionInfo != null)
                     {
-                        data = new byte[CustomOffset + 9];
-                        data[CustomOffset] = (byte)EventResponseType.TriggerEvent;
-                        Buffer.BlockCopy(BitConverter.GetBytes(eventProxyEventArgs.EventId), 0, data, CustomOffset + 1, 8);
-                        length = data.Length;
+                        transmissionInfoLength =
+                            ZeroFormatterSerializer.NonGeneric.Serialize(eventProxyEventArgs.TransmissionInfo.GetType(),
+                                ref data, CustomOffset + 11, eventProxyEventArgs.TransmissionInfo);
+                    }
+                    if (eventProxyEventArgs.Parameter != null)
+                    {
+                        parameterLength =
+                            ZeroFormatterSerializer.NonGeneric.Serialize(eventProxyEventArgs.Parameter.GetType(),
+                                ref data, CustomOffset + 11 + transmissionInfoLength, eventProxyEventArgs.Parameter);
+                    }
+
+                    EventResponseType responseType;
+                    if (transmissionInfoLength > 0 && parameterLength > 0)
+                        responseType = EventResponseType.TriggerEventWithTransmissionInfoAndParameter;
+                    else if (transmissionInfoLength == 0 && parameterLength > 0)
+                        responseType = EventResponseType.TriggerEventWithParameter;
+                    else if (transmissionInfoLength > 0 && parameterLength == 0)
+                        responseType = EventResponseType.TriggerEventWithTransmissionInfo;
+                    else
+                        responseType = EventResponseType.TriggerEvent;
+
+                    data[CustomOffset] = (byte) responseType;
+                    Buffer.BlockCopy(BitConverter.GetBytes(eventProxyEventArgs.EventId), 0, data, CustomOffset + 1, 8);
+
+                    if (responseType == EventResponseType.TriggerEvent)
+                    {
+                        length = CustomOffset + 9;
                     }
                     else
                     {
-                        data = new byte[EstimatedParameterSize + 9 + CustomOffset];
-                        data[CustomOffset] = (byte)EventResponseType.TriggerEventWithParameter;
-                        Buffer.BlockCopy(BitConverter.GetBytes(eventProxyEventArgs.EventId), 0, data, CustomOffset + 1, 8);
-                        length = CustomOffset + 9 +
-                                 ZeroFormatterSerializer.NonGeneric.Serialize(eventProxyEventArgs.Parameter.GetType(),
-                                     ref data, CustomOffset + 9, eventProxyEventArgs.Parameter);
+                        Buffer.BlockCopy(BitConverter.GetBytes((ushort) transmissionInfoLength), 0, data,
+                            CustomOffset + 9, 2);
+                        length = CustomOffset + 11 + transmissionInfoLength + parameterLength;
                     }
                 }
 
@@ -186,7 +214,10 @@ namespace CodeElements.NetworkCallTransmission
                 }
                 else
                 {
-                    var subscriberTaskDictionary = subscribers.ToDictionary(x => x.CheckPermissions(subscription.RequiredPermissions, eventProxyEventArgs.Parameter), y => y);
+                    var subscriberTaskDictionary =
+                        subscribers.ToDictionary(
+                            x => x.CheckPermissions(subscription.RequiredPermissions, eventProxyEventArgs.TransmissionInfo),
+                            y => y);
                     var tasks = subscriberTaskDictionary.Select(x => x.Key).ToList();
 
                     while (tasks.Count > 0)

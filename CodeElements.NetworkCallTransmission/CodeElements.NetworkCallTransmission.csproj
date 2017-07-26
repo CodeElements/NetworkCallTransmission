@@ -99,6 +99,7 @@
     <Compile Include="Internal\CallTransmissionResponseType.cs" />
     <Compile Include="Internal\ResultCallback.cs" />
     <Compile Include="Internal\SubscribedEventInfo.cs" />
+    <Compile Include="TransmittedEventHandler.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="app.config" />

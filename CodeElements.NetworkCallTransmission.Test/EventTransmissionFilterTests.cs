@@ -25,16 +25,16 @@ namespace CodeElements.NetworkCallTransmission.Test
             var raised1 = false;
             var raised2 = false;
 
-            events.Events.TestEvent1 += (sender, args) => raised1 = true;
+            events.Events.TestEvent1 += info => raised1 = true;
 
             _basicTestEventsImpl.TriggerTestEvent1();
             Assert.True(raised1);
 
-            events.Events.TestEvent2 += (sender, args) => raised2 = true;
-            _basicTestEventsImpl.TriggerTestEvent2("test");
+            events.Events.TestEvent2 += (transInfo, args) => raised2 = true;
+            _basicTestEventsImpl.TriggerTestEvent2("324asd", "test");
             Assert.False(raised2);
 
-            _basicTestEventsImpl.TriggerTestEvent2("asd");
+            _basicTestEventsImpl.TriggerTestEvent2("asd", "a3");
             Assert.True(raised2);
         }
     }

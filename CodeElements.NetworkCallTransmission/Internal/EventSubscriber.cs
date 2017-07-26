@@ -14,8 +14,11 @@ namespace CodeElements.NetworkCallTransmission.Internal
                 var eventInfo = events[i];
 
                 var eventHandlerType = eventInfo.EventHandlerType;
-                if(!(eventHandlerType == typeof(EventHandler) || eventHandlerType.IsGenericType && eventHandlerType.GetGenericTypeDefinition() == typeof(EventHandler<>)))
-                    throw new ArgumentException("All events must be of type EventHandler or EventHandler<>", nameof(type));
+                if (!(eventHandlerType.IsGenericType &&
+                      (eventHandlerType.GetGenericTypeDefinition() == typeof(TransmittedEventHandler<>) ||
+                       eventHandlerType.GetGenericTypeDefinition() == typeof(TransmittedEventHandler<,>))))
+                    throw new ArgumentException("All events must be of type TransmittedEventHandler<> or TransmittedEventHandler<,>",
+                        nameof(type));
 
                 AvailableEvents[i] = new EventSubscription(eventInfo, eventInfo.GetEventId(type, sessionId),
                     EventHandler, eventProvider);
@@ -32,15 +35,9 @@ namespace CodeElements.NetworkCallTransmission.Internal
         private void EventHandler(object[] objects)
         {
             var eventId = (ulong) objects[0];
+            var parameter = objects.Length > 2 ? objects[2] : null;
 
-            object parameter;
-            //objects[1] is the instance
-            if (objects.Length > 2)
-                parameter = objects[2] == EventArgs.Empty ? null : objects[2];
-            else
-                parameter = null;
-
-            EventRaised?.Invoke(this, new EventProxyEventArgs(eventId, parameter));
+            EventRaised?.Invoke(this, new EventProxyEventArgs(eventId, objects[1], parameter));
         }
     }
 }

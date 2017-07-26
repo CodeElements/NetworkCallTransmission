@@ -138,13 +138,13 @@ namespace CodeElements.NetworkCallTransmission.Internal
             _filters.Add(eventFilter);
         }
 
-        public void TriggerEvent(EventInfo eventInfo, object parameter)
+        public void TriggerEvent(EventInfo eventInfo, object transmissionInfo, object parameter)
         {
             if (_filters.Any(x => !x.FilterEvent(eventInfo, parameter)))
                 return;
 
             var eventIndex = Array.IndexOf(_interceptorProxy.Events, eventInfo);
-            _interceptorProxy.TriggerEvent(eventIndex, parameter);
+            _interceptorProxy.TriggerEvent(eventIndex, transmissionInfo, parameter);
         }
     }
 }

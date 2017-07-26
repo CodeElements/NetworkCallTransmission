@@ -32,7 +32,7 @@ namespace CodeElements.NetworkCallTransmission
         /// </summary>
         /// <typeparam name="TEventInterface">
         ///     The event contract interface which defines the events. Please note that all events
-        ///     must be an <see cref="EventHandler" /> or <see cref="EventHandler{TEventArgs}" />.
+        ///     must be an <see cref="TransmittedEventHandler{TTransmissionInfo}" /> or <see cref="TransmittedEventHandler{TTransmissionInfo,TEventArgs}" />.
         /// </typeparam>
         /// <returns>Return an <see cref="IEventProvider{TEventInterface}" /> which manages the events</returns>
         public IEventProvider<TEventInterface> GetEvents<TEventInterface>()
@@ -45,7 +45,7 @@ namespace CodeElements.NetworkCallTransmission
         /// </summary>
         /// <typeparam name="TEventInterface">
         ///     The event contract interface which defines the events. Please note that all events
-        ///     must be an <see cref="EventHandler" /> or <see cref="EventHandler{TEventArgs}" />.
+        ///     must be an <see cref="TransmittedEventHandler{TTransmissionInfo}" /> or <see cref="TransmittedEventHandler{TTransmissionInfo,TEventArgs}" />.
         /// </typeparam>
         /// <param name="eventSessionId">The session id the events were registered with</param>
         /// <returns>Return an <see cref="IEventProvider{TEventInterface}" /> which manages the events</returns>
@@ -78,7 +78,8 @@ namespace CodeElements.NetworkCallTransmission
             {
                 case EventResponseType.TriggerEvent:
                 case EventResponseType.TriggerEventWithParameter:
-                    var withParameter = responseType == EventResponseType.TriggerEventWithParameter;
+                case EventResponseType.TriggerEventWithTransmissionInfo:
+                case EventResponseType.TriggerEventWithTransmissionInfoAndParameter:
                     var eventId = BitConverter.ToUInt64(data, offset + 1);
 
                     List<IEventTrigger> triggers;
@@ -91,15 +92,33 @@ namespace CodeElements.NetworkCallTransmission
                     }
 
                     object parameter;
-                    if (withParameter)
-                        parameter =
-                            ZeroFormatterSerializer.NonGeneric.Deserialize(subscribedEvent.EventHandlerParameterType,
-                                data, 9);
-                    else
+                    object transmissionInfo;
+
+                    if (responseType == EventResponseType.TriggerEvent)
+                    {
+                        transmissionInfo = null;
                         parameter = null;
+                    }
+                    else
+                    {
+                        var transmissionInfoLength = BitConverter.ToUInt16(data, offset + 9);
+                        if (transmissionInfoLength > 0)
+                            transmissionInfo =
+                                ZeroFormatterSerializer.NonGeneric.Deserialize(
+                                    subscribedEvent.EventHandlerTransmissionInfoType, data, offset + 11);
+                        else
+                            transmissionInfo = null;
+
+                        if (responseType == EventResponseType.TriggerEventWithParameter || responseType ==
+                            EventResponseType.TriggerEventWithTransmissionInfoAndParameter)
+                            parameter = ZeroFormatterSerializer.NonGeneric.Deserialize(
+                                subscribedEvent.EventHandlerParameterType, data, offset + 11 + transmissionInfoLength);
+                        else
+                            parameter = null;
+                    }
 
                     foreach (var eventTrigger in triggers)
-                        eventTrigger.TriggerEvent(subscribedEvent.EventInfo, parameter);
+                        eventTrigger.TriggerEvent(subscribedEvent.EventInfo, transmissionInfo, parameter);
                     break;
                 default:
                     throw new ArgumentOutOfRangeException();

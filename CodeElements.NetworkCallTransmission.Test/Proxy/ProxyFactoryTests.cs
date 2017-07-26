@@ -1,5 +1,4 @@
-﻿using System;
-using System.Reflection;
+﻿using System.Reflection;
 using System.Threading.Tasks;
 using CodeElements.NetworkCallTransmission.Proxy;
 using Xunit;
@@ -45,10 +44,14 @@ namespace CodeElements.NetworkCallTransmission.Test.Proxy
             var interfaceObj =
                 ProxyFactory.InitializeEventProxy<IEventTestInterface>(ProxyFactory.CreateProxy<IEventTestInterface>(), interceptor);
             var raised = false;
-            interfaceObj.TestEvent += (sender, s) => raised = true;
+            interfaceObj.TestEvent += info =>
+            {
+                Assert.Equal(23, info);
+                raised = true;
+            };
 
             var raiser = (IEventInterceptorProxy) interfaceObj;
-            raiser.TriggerEvent(0, null);
+            raiser.TriggerEvent(0, 23, null);
             Assert.True(raised);
         }
 
@@ -62,7 +65,7 @@ namespace CodeElements.NetworkCallTransmission.Test.Proxy
             interfaceObj.TestEvent3 += (sender, s) => raised = true;
 
             var raiser = (IEventInterceptorProxy) interfaceObj;
-            raiser.TriggerEvent(1, "asd");
+            raiser.TriggerEvent(1, TransmissionInfo.Empty, "asd");
             Assert.True(raised);
         }
 
@@ -132,8 +135,8 @@ namespace CodeElements.NetworkCallTransmission.Test.Proxy
 
     public interface IEventTestInterface
     {
-        event EventHandler TestEvent;
+        event TransmittedEventHandler<int> TestEvent;
         //event ResolveEventHandler TestEvent2;
-        event EventHandler<string> TestEvent3;
+        event TransmittedEventHandler<TransmissionInfo, string> TestEvent3;
     }
 }

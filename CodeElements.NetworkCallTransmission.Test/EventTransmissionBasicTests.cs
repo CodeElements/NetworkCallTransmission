@@ -28,11 +28,11 @@ namespace CodeElements.NetworkCallTransmission.Test
         [Fact]
         public void TestEventManagerSubscribeUnsubscribeEvents()
         {
-            void Handler1(object sender, EventArgs args) => Debug.Print("");
-            void Handler2(object sender, string args) => Debug.Print("");
-            void Handler3(object sender, bool args) => Debug.Print("");
-            void Handler31(object sender, bool args) => Debug.Print("");
-            void Handler32(object sender, bool args) => Debug.Print("");
+            void Handler1(TransmissionInfo args) => Debug.Print("");
+            void Handler2(string sender, string args) => Debug.Print("");
+            void Handler3(TransmissionInfo sender, bool args) => Debug.Print("");
+            void Handler31(TransmissionInfo sender, bool args) => Debug.Print("");
+            void Handler32(TransmissionInfo sender, bool args) => Debug.Print("");
 
             var events = _eventSubscriber.EventManager.GetEvents<IBasicTestEvents>();
             events.Events.TestEvent1 += Handler1;
@@ -50,14 +50,14 @@ namespace CodeElements.NetworkCallTransmission.Test
         public void TestEventRegisterTriggerWithoutClients()
         {
             _basicTestEventsImpl.TriggerTestEvent1();
-            _basicTestEventsImpl.TriggerTestEvent2("asd");
+            _basicTestEventsImpl.TriggerTestEvent2("asd", "as435");
         }
 
         [Fact]
         public void TestEventManagerReceiveEvent()
         {
             var receivedEvent1 = false;
-            void Handler1(object sender, EventArgs args) => receivedEvent1 = true;
+            void Handler1(TransmissionInfo transmissionInfo) => receivedEvent1 = true;
 
             var events = _eventSubscriber.EventManager.GetEvents<IBasicTestEvents>();
             events.Events.TestEvent1 += Handler1;
@@ -102,30 +102,30 @@ namespace CodeElements.NetworkCallTransmission.Test
 
     public interface IBasicTestEvents
     {
-        event EventHandler TestEvent1;
-        event EventHandler<string> TestEvent2;
-        event EventHandler<bool> TestEvent3;
+        event TransmittedEventHandler<TransmissionInfo> TestEvent1;
+        event TransmittedEventHandler<string, string> TestEvent2;
+        event TransmittedEventHandler<TransmissionInfo, bool> TestEvent3;
     }
 
     public class BasicTestEventsImpl : IBasicTestEvents
     {
-        public event EventHandler TestEvent1;
-        public event EventHandler<string> TestEvent2;
-        public event EventHandler<bool> TestEvent3;
+        public event TransmittedEventHandler<TransmissionInfo> TestEvent1;
+        public event TransmittedEventHandler<string, string> TestEvent2;
+        public event TransmittedEventHandler<TransmissionInfo, bool> TestEvent3;
 
         public void TriggerTestEvent1()
         {
-            TestEvent1?.Invoke(this, EventArgs.Empty);
+            TestEvent1?.Invoke(TransmissionInfo.Empty);
         }
 
-        public void TriggerTestEvent2(string data)
+        public void TriggerTestEvent2(string transmissionInfo, string data)
         {
-            TestEvent2?.Invoke(this, data);
+            TestEvent2?.Invoke(transmissionInfo, data);
         }
 
         public void TriggerTestEvent3(bool data)
         {
-            TestEvent3?.Invoke(this, data);
+            TestEvent3?.Invoke(TransmissionInfo.Empty, data);
         }
     }
 }

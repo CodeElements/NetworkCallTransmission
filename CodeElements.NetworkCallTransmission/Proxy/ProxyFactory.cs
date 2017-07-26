@@ -17,6 +17,18 @@ namespace CodeElements.NetworkCallTransmission.Proxy
             eventInterceptorImplementor.ImplementProxy(typeBuilder);
 
 	        var events = GetEvents(interfaceList);
+            foreach (var eventInfo in events)
+            {
+                if (!eventInfo.EventHandlerType.IsGenericType)
+                    throw new ArgumentException(
+                        "Only TransmittedEventHandler<> and TransmittedEventHandler<,> are allowed");
+
+                var type = eventInfo.EventHandlerType.GetGenericTypeDefinition();
+                if (!(type == typeof(TransmittedEventHandler<>) || type == typeof(TransmittedEventHandler<,>)))
+                    throw new ArgumentException(
+                        "Only TransmittedEventHandler<> and TransmittedEventHandler<,> are allowed");
+            }
+
             var eventFields = new FieldBuilder[events.Count];
 
             var builder = new ProxyEventBuilder();
@@ -35,7 +47,7 @@ namespace CodeElements.NetworkCallTransmission.Proxy
 
 	    public static T InitializeEventProxy<T>(EventProxyInitializationInfo initializationInfo, IEventInterceptor eventInterceptor)
 	    {
-	        var result = (T)Activator.CreateInstance(initializationInfo.ProxyType);
+	        var result = (T) Activator.CreateInstance(initializationInfo.ProxyType);
 
 	        var proxy = (IEventInterceptorProxy) result;
 	        proxy.Interceptor = eventInterceptor;

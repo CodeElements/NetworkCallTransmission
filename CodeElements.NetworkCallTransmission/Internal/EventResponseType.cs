@@ -3,6 +3,8 @@
     internal enum EventResponseType
     {
         TriggerEvent,
-        TriggerEventWithParameter
+        TriggerEventWithTransmissionInfo,
+        TriggerEventWithParameter,
+        TriggerEventWithTransmissionInfoAndParameter
     }
 }

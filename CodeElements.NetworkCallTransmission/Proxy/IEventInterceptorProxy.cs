@@ -7,6 +7,6 @@ namespace CodeElements.NetworkCallTransmission.Proxy
         IEventInterceptor Interceptor { get; set; }
         EventInfo[] Events { get; set; }
 
-        void TriggerEvent(int eventId, object parameter);
+        void TriggerEvent(int eventId, object transmissionInfo, object parameter);
     }
 }

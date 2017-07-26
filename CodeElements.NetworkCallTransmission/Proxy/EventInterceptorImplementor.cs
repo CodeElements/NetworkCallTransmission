@@ -28,7 +28,7 @@ namespace CodeElements.NetworkCallTransmission.Proxy
         {
             var methodAttributes = MethodAttributes.Public | MethodAttributes.HideBySig | MethodAttributes.Virtual;
             var methodBuilder = typeBuilder.DefineMethod(nameof(IEventInterceptorProxy.TriggerEvent), methodAttributes,
-                CallingConventions.HasThis, typeof(void), new[] {typeof(int), typeof(object)});
+                CallingConventions.HasThis, typeof(void), new[] {typeof(int), typeof(object), typeof(object)});
 
             var il = methodBuilder.GetILGenerator();
             var jumpTable = new Label[fieldBuilders.Length];
@@ -63,27 +63,38 @@ namespace CodeElements.NetworkCallTransmission.Proxy
 
                 //if not null
                 il.MarkLabel(ifNotNullLabel);
-                il.Emit(OpCodes.Ldarg_0);
 
                 var eventInfo = events[i];
-                if (eventInfo.EventHandlerType.IsGenericType)
+                var genericArguments = eventInfo.EventHandlerType.GetGenericArguments();
+
+                il.Emit(OpCodes.Ldarg_2);
+                il.Emit(genericArguments[0].IsValueType ? OpCodes.Unbox_Any : OpCodes.Castclass, genericArguments[0]);
+
+                if (genericArguments.Length == 2)
                 {
-                    il.Emit(OpCodes.Ldarg_2);
-                    il.Emit(OpCodes.Castclass, eventInfo.EventHandlerType.GetGenericArguments()[0]);
-                }
-                else
-                {
-                    // ReSharper disable once AssignNullToNotNullAttribute
-                    il.Emit(OpCodes.Ldsfld,
-                        typeof(EventArgs).GetField(nameof(EventArgs.Empty), BindingFlags.Static | BindingFlags.Public));
+                    il.Emit(OpCodes.Ldarg_3);
+                    il.Emit(genericArguments[1].IsValueType ? OpCodes.Unbox_Any : OpCodes.Castclass,
+                        genericArguments[1]);
                 }
 
-                il.Emit(OpCodes.Callvirt, eventInfo.EventHandlerType.GetMethod(nameof(EventHandler.Invoke)));
+                il.Emit(OpCodes.Callvirt, eventInfo.EventHandlerType.GetMethod(nameof(TransmittedEventHandler<TransmissionInfo>.Invoke)));
                 il.Emit(OpCodes.Ret);
             }
 
             typeBuilder.DefineMethodOverride(methodBuilder,
                 typeof(IEventInterceptorProxy).GetMethod(nameof(IEventInterceptorProxy.TriggerEvent)));
+        }
+
+        private TransmittedEventHandler<string, int> _asd;
+
+        public void Test(int eventId, object transmissionInfo, object parameter)
+        {
+            switch (eventId)
+            {
+                case 1:
+                    _asd.Invoke((string) transmissionInfo, (int)parameter);
+                    break;
+            }
         }
     }
 }
