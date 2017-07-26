@@ -140,7 +140,7 @@ namespace CodeElements.NetworkCallTransmission.Internal
 
         public void TriggerEvent(EventInfo eventInfo, object transmissionInfo, object parameter)
         {
-            if (_filters.Any(x => !x.FilterEvent(eventInfo, parameter)))
+            if (_filters.Any(x => !x.FilterEvent(eventInfo, transmissionInfo)))
                 return;
 
             var eventIndex = Array.IndexOf(_interceptorProxy.Events, eventInfo);

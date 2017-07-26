@@ -11,8 +11,8 @@ namespace CodeElements.NetworkCallTransmission
         ///     Called before an event is triggered
         /// </summary>
         /// <param name="eventInfo">The event info</param>
-        /// <param name="parameter">The parameter of the event</param>
+        /// <param name="transmissionInfo">The transmissionInfo of the event</param>
         /// <returns>Return true if the event should be triggered or false if the operation should be canceled</returns>
-        bool FilterEvent(EventInfo eventInfo, object parameter);
+        bool FilterEvent(EventInfo eventInfo, object transmissionInfo);
     }
 }
