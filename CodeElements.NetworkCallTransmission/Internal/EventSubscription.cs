@@ -28,6 +28,11 @@ namespace CodeElements.NetworkCallTransmission.Internal
 
             var permissionsAttribute = eventInfo.GetCustomAttribute<EventPermissionsAttribute>();
             RequiredPermissions = permissionsAttribute?.RequiredPermissions;
+
+            var genericArguments = eventInfo.EventHandlerType.GetGenericArguments();
+            TransmissionInfoType = genericArguments[0];
+            if (genericArguments.Length > 1)
+                EventArgsType = genericArguments[1];
         }
 
         public ulong EventId { get; }
@@ -35,6 +40,8 @@ namespace CodeElements.NetworkCallTransmission.Internal
         public List<IEventSubscriber> Subscriber { get; }
         public object SubscriberLock { get; }
         public int[] RequiredPermissions { get; }
+        public Type EventArgsType { get; }  
+        public Type TransmissionInfoType { get; }
 
         public void Subscribe()
         {

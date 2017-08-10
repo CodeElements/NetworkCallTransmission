@@ -152,7 +152,7 @@ namespace CodeElements.NetworkCallTransmission
                 {
                     data = new byte[CustomOffset + 11 +
                                     (eventProxyEventArgs.TransmissionInfo != null ? EstimatedTransmissionInfoSize : 0) +
-                                    (eventProxyEventArgs.Parameter != null ? EstimatedParameterSize : 0)];
+                                    (eventProxyEventArgs.EventArgs != null ? EstimatedParameterSize : 0)];
 
                     var transmissionInfoLength = 0;
                     var parameterLength = 0;
@@ -160,14 +160,14 @@ namespace CodeElements.NetworkCallTransmission
                     if (eventProxyEventArgs.TransmissionInfo != null)
                     {
                         transmissionInfoLength =
-                            ZeroFormatterSerializer.NonGeneric.Serialize(eventProxyEventArgs.TransmissionInfo.GetType(),
+                            ZeroFormatterSerializer.NonGeneric.Serialize(subscription.TransmissionInfoType,
                                 ref data, CustomOffset + 11, eventProxyEventArgs.TransmissionInfo);
                     }
-                    if (eventProxyEventArgs.Parameter != null)
+                    if (eventProxyEventArgs.EventArgs != null)
                     {
                         parameterLength =
-                            ZeroFormatterSerializer.NonGeneric.Serialize(eventProxyEventArgs.Parameter.GetType(),
-                                ref data, CustomOffset + 11 + transmissionInfoLength, eventProxyEventArgs.Parameter);
+                            ZeroFormatterSerializer.NonGeneric.Serialize(subscription.EventArgsType,
+                                ref data, CustomOffset + 11 + transmissionInfoLength, eventProxyEventArgs.EventArgs);
                     }
 
                     EventResponseType responseType;
