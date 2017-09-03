@@ -6,30 +6,60 @@ using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
 using CodeElements.NetworkCallTransmission.Internal;
-using ZeroFormatter;
+using CodeElements.NetworkCallTransmission.Memory;
 
 namespace CodeElements.NetworkCallTransmission
 {
+    /// <summary>
+    ///     A delegate to modify the data before it is sent
+    /// </summary>
+    /// <param name="buffer">The data buffer</param>
+    /// <param name="offset">The offset of the data in the buffer</param>
+    /// <param name="length">The length of the data in the buffer</param>
+    /// <returns>Return the modified byte array. If changes were made to buffer, just return it.
+    /// </returns>
+    public delegate Task<byte[]> ModifyDataDelegate(byte[] buffer, int offset, int length);
+
     /// <summary>
     ///     Let classes register their events to make them available to the remote side. The counterpart is
     ///     <see cref="EventManager" />
     /// </summary>
     public class EventRegister
     {
+        internal const int MaxBufferSize = 2000;
+        internal const int DefaultPoolSize = MaxBufferSize * 524; // ~1 MiB
+
         private const int EstimatedParameterSize = 150;
         private const int EstimatedTransmissionInfoSize = 16;
+        private readonly BufferManager _bufferManager;
         private readonly ConcurrentDictionary<IEventSubscriber, List<ulong>> _clients;
         private readonly ConcurrentDictionary<ulong, EventSubscription> _events;
+        private readonly INetworkSerializer _serializer;
         private int _eventIdCounter;
 
         /// <summary>
         ///     Initialize a new instance of <see cref="EventRegister" />
         /// </summary>
-        public EventRegister()
+        /// <param name="serializer">The serializer used to serialize/deserialize the objects</param>
+        public EventRegister(INetworkSerializer serializer) : this(serializer, DefaultPoolSize)
         {
+        }
+
+        /// <summary>
+        ///     Initialize a new instance of <see cref="EventRegister" />
+        /// </summary>
+        /// <param name="serializer">The serializer used to serialize/deserialize the objects</param>
+        /// <param name="totalBufferCacheSize">
+        ///     The size of the thread-shared buffer for object serialization. Submit zero if you
+        ///     dont want a global buffer
+        /// </param>
+        public EventRegister(INetworkSerializer serializer, long totalBufferCacheSize)
+        {
+            _serializer = serializer;
             _events = new ConcurrentDictionary<ulong, EventSubscription>();
             _clients = new ConcurrentDictionary<IEventSubscriber, List<ulong>>();
             _eventIdCounter = 1;
+            _bufferManager = BufferManager.CreateBufferManager(totalBufferCacheSize, MaxBufferSize);
         }
 
         /// <summary>
@@ -38,13 +68,19 @@ namespace CodeElements.NetworkCallTransmission
         public int CustomOffset { get; set; }
 
         /// <summary>
+        ///     Delegate that gets executed everytime before an event is triggered. It allows the modification of the data, like
+        ///     setting a header (in the range of <see cref="CustomOffset" />) or compressing
+        /// </summary>
+        public ModifyDataDelegate ModifyDataDelegate { get; set; }
+
+        /// <summary>
         ///     Register events
         /// </summary>
         /// <typeparam name="TEventInterface">
         ///     The event contract interface which defines the events. Please note that all events
         ///     must be an <see cref="EventHandler" /> or <see cref="EventHandler{TEventArgs}" />.
         /// </typeparam>
-        /// <param name="eventProvider">The instance of <see cref="TEventInterface"/> which calls the events</param>
+        /// <param name="eventProvider">The instance of <see cref="TEventInterface" /> which calls the events</param>
         public void RegisterEvents<TEventInterface>(TEventInterface eventProvider) where TEventInterface : class
         {
             var interfaceType = typeof(TEventInterface).GetTypeInfo();
@@ -62,7 +98,7 @@ namespace CodeElements.NetworkCallTransmission
         ///     The event contract interface which defines the events. Please note that all events
         ///     must be an <see cref="EventHandler" /> or <see cref="EventHandler{TEventArgs}" />.
         /// </typeparam>
-        /// <param name="eventProvider">The instance of <see cref="TEventInterface"/> which calls the events</param>
+        /// <param name="eventProvider">The instance of <see cref="TEventInterface" /> which calls the events</param>
         /// <returns>Return the session id</returns>
         public uint RegisterPrivateEvents<TEventInterface>(TEventInterface eventProvider)
         {
@@ -147,29 +183,29 @@ namespace CodeElements.NetworkCallTransmission
             if (_events.TryGetValue(eventProxyEventArgs.EventId, out var subscription))
             {
                 byte[] data = null;
-                int length = 0;
+                var length = 0;
+                var returnBuffer = true;
 
-                void GetData()
+                async Task GetData()
                 {
-                    data = new byte[CustomOffset + 11 +
-                                    (eventProxyEventArgs.TransmissionInfo != null ? EstimatedTransmissionInfoSize : 0) +
-                                    (eventProxyEventArgs.EventArgs != null ? EstimatedParameterSize : 0)];
+                    var dataLength = CustomOffset + 11 +
+                                     (eventProxyEventArgs.TransmissionInfo != null
+                                         ? EstimatedTransmissionInfoSize
+                                         : 0) +
+                                     (eventProxyEventArgs.EventArgs != null ? EstimatedParameterSize : 0);
+                    var takenBuffer = _bufferManager.TakeBuffer(dataLength);
+                    data = takenBuffer;
 
                     var transmissionInfoLength = 0;
                     var parameterLength = 0;
 
                     if (eventProxyEventArgs.TransmissionInfo != null)
-                    {
-                        transmissionInfoLength =
-                            ZeroFormatterSerializer.NonGeneric.Serialize(subscription.TransmissionInfoType,
-                                ref data, CustomOffset + 11, eventProxyEventArgs.TransmissionInfo);
-                    }
+                        transmissionInfoLength = _serializer.Serialize(subscription.TransmissionInfoType,
+                            ref data, CustomOffset + 11, eventProxyEventArgs.TransmissionInfo);
                     if (eventProxyEventArgs.EventArgs != null)
-                    {
                         parameterLength =
-                            ZeroFormatterSerializer.NonGeneric.Serialize(subscription.EventArgsType,
+                            _serializer.Serialize(subscription.EventArgsType,
                                 ref data, CustomOffset + 11 + transmissionInfoLength, eventProxyEventArgs.EventArgs);
-                    }
 
                     EventResponseType responseType;
                     if (transmissionInfoLength > 0 && parameterLength > 0)
@@ -194,48 +230,64 @@ namespace CodeElements.NetworkCallTransmission
                             CustomOffset + 9, 2);
                         length = CustomOffset + 11 + transmissionInfoLength + parameterLength;
                     }
+
+                    if (ModifyDataDelegate != null)
+                        data = await ModifyDataDelegate(data, 0, length).ConfigureAwait(false);
+
+                    if (data != takenBuffer)
+                    {
+                        _bufferManager.ReturnBuffer(takenBuffer);
+                        returnBuffer = false;
+                    }
                 }
 
                 List<IEventSubscriber> subscribers;
                 lock (subscription.SubscriberLock)
                 {
-                    subscribers = subscription.Subscriber.ToList(); //copy subscriber
+                    subscribers = subscription.Subscriber.ToList(); //copy subscribers
                 }
+
+                if (subscribers.Count == 0)
+                    return;
+
+                List<Task> runningTasks;
 
                 //check permissions
                 if (subscription.RequiredPermissions == null)
                 {
-                    foreach (var subscriber in subscribers)
-                    {
-                        if (data == null) GetData();
-
-                        //await because the byte array may be modified by the clients (CustomOffset)
-                        await subscriber.TriggerEvent(data, length).ConfigureAwait(false);
-                    }
+                    await GetData().ConfigureAwait(false);
+                    runningTasks = subscribers.Select(x => x.TriggerEvent(data, 0, length)).ToList();
                 }
                 else
                 {
-                    var subscriberTaskDictionary =
+                    var subscriberPermissionsTaskDictionary =
                         subscribers.ToDictionary(
-                            x => x.CheckPermissions(subscription.RequiredPermissions, eventProxyEventArgs.TransmissionInfo),
+                            x => x.CheckPermissions(subscription.RequiredPermissions,
+                                eventProxyEventArgs.TransmissionInfo),
                             y => y);
-                    var tasks = subscriberTaskDictionary.Select(x => x.Key).ToList();
+                    var tasks = subscriberPermissionsTaskDictionary.Select(x => x.Key).ToList();
+                    runningTasks = new List<Task>();
 
                     while (tasks.Count > 0)
                     {
                         var finishedTask = await Task.WhenAny(tasks).ConfigureAwait(false);
-                        var subscriber = subscriberTaskDictionary[finishedTask];
-                        subscriberTaskDictionary.Remove(finishedTask);
+                        var subscriber = subscriberPermissionsTaskDictionary[finishedTask];
+                        subscriberPermissionsTaskDictionary.Remove(finishedTask);
                         tasks.Remove(finishedTask);
 
                         if (finishedTask.Result)
                         {
-                            if (data == null) GetData();
-
-                            //await because the byte array may be modified by the clients (CustomOffset)
-                            await subscriber.TriggerEvent(data, length).ConfigureAwait(false);
+                            if (data == null) await GetData().ConfigureAwait(false);
+                            runningTasks.Add(subscriber.TriggerEvent(data, 0, length));
                         }
                     }
+                }
+
+                if (runningTasks.Count > 0)
+                {
+                    await Task.WhenAll(runningTasks).ConfigureAwait(false);
+                    if (returnBuffer)
+                        _bufferManager.ReturnBuffer(data);
                 }
             }
         }

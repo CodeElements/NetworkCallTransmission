@@ -2,7 +2,7 @@ using System;
 using System.Reflection;
 using ZeroFormatter;
 
-namespace CodeElements.NetworkCallTransmission.Exceptions.Wrapper
+namespace CodeElements.NetworkCallTransmission.ZeroFormatter.Exceptions.Wrapper
 {
     [ZeroFormattable]
     public class RemoteCallExceptionWrapper : ExceptionInfo, IExceptionWrapper
@@ -46,7 +46,7 @@ namespace CodeElements.NetworkCallTransmission.Exceptions.Wrapper
                 }
             }
 
-            return new RemoteCallException(Message, GetInnerException()?.GetException(), ExceptionClassName);
+            return new NetworkCallException(Message, ExceptionClassName, GetInnerException()?.GetException());
         }
     }
 }

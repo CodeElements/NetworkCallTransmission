@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Threading.Tasks;
+using CodeElements.NetworkCallTransmission.ZeroFormatter;
 using Xunit;
 using ZeroFormatter;
 
@@ -55,7 +56,7 @@ namespace CodeElements.NetworkCallTransmission.Test
     {
         public PermissionsTestSubscriber()
         {
-            EventManager = new EventManager { SendData = SendDataHandler };
+            EventManager = new EventManager(ZeroFormatterNetworkSerializer.Instance) { SendData = SendDataHandler };
         }
 
         private Task SendDataHandler(ArraySegment<byte> data)
@@ -80,9 +81,9 @@ namespace CodeElements.NetworkCallTransmission.Test
             return Task.FromResult(AllowEvent);
         }
 
-        public Task TriggerEvent(byte[] data, int length)
+        public Task TriggerEvent(byte[] data, int offset, int length)
         {
-            EventManager.ReceiveData(data, 0);
+            EventManager.ReceiveData(data, offset);
             return Task.CompletedTask;
         }
 

@@ -2,14 +2,13 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Reflection;
-using CodeElements.NetworkCallTransmission.Exceptions.Wrapper;
+using CodeElements.NetworkCallTransmission.ZeroFormatter.Exceptions.Wrapper;
 using ZeroFormatter;
 
-namespace CodeElements.NetworkCallTransmission.Exceptions
+namespace CodeElements.NetworkCallTransmission.ZeroFormatter.Exceptions
 {
     internal static class ExceptionFactory
     {
-        private static readonly FieldInfo StackTraceStringProperty;
         private static readonly FieldInfo MessageField;
         private static readonly PropertyInfo HResultProperty;
         private static readonly FieldInfo RemoteStackTraceField;
@@ -18,7 +17,6 @@ namespace CodeElements.NetworkCallTransmission.Exceptions
         static ExceptionFactory()
         {
             var exceptionType = typeof(Exception).GetTypeInfo();
-            StackTraceStringProperty = exceptionType.GetDeclaredField("_stackTraceString");
             HResultProperty = exceptionType.GetProperty(nameof(Exception.HResult));
             MessageField = exceptionType.GetDeclaredField("_message");
             RemoteStackTraceField = exceptionType.GetDeclaredField("_remoteStackTraceString");

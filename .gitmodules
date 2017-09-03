@@ -1,0 +1,6 @@
+[submodule "NetSerializer/NetSerializer"]
+	path = NetSerializer/NetSerializer
+	url = https://github.com/CodeElements/netserializer
+[submodule "ZeroFormatter/ZeroFormatter"]
+	path = ZeroFormatter/ZeroFormatter
+	url = https://github.com/CodeElements/ZeroFormatter

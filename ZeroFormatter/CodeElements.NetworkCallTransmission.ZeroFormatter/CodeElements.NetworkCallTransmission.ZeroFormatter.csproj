@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netstandard1.6</TargetFramework>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\CodeElements.NetworkCallTransmission\CodeElements.NetworkCallTransmission.csproj" />
+    <ProjectReference Include="..\ZeroFormatter\src\ZeroFormatter.Interfaces.NETCore\ZeroFormatter.Interfaces.NETCore.csproj" />
+    <ProjectReference Include="..\ZeroFormatter\src\ZeroFormatter.NETCore\ZeroFormatter.NETCore.csproj" />
+  </ItemGroup>
+
+</Project>

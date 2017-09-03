@@ -21,8 +21,9 @@ namespace CodeElements.NetworkCallTransmission
         /// <summary>
         ///     Trigger an event on the subscriber
         /// </summary>
-        /// <param name="data">The event data</param>
-        /// <param name="length">The length of the event data buffer</param>
-        Task TriggerEvent(byte[] data, int length);
+        /// <param name="buffer">The event buffer</param>
+        /// <param name="offset">The offset of the data in the buffer</param>
+        /// <param name="length">The length of the event buffer</param>
+        Task TriggerEvent(byte[] buffer, int offset, int length);
     }
 }

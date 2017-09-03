@@ -1,6 +1,6 @@
 ﻿using ZeroFormatter;
 
-namespace CodeElements.NetworkCallTransmission.Exceptions.Wrapper
+namespace CodeElements.NetworkCallTransmission.ZeroFormatter.Exceptions.Wrapper
 {
     [ZeroFormattable]
     public class ExceptionWrapper : ExceptionInfo, IExceptionWrapper

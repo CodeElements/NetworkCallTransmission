@@ -6,11 +6,9 @@ using System.Reflection;
 using System.Security.Cryptography;
 using System.Threading;
 using System.Threading.Tasks;
-using CodeElements.NetworkCallTransmission.Exceptions;
 using CodeElements.NetworkCallTransmission.Extensions;
 using CodeElements.NetworkCallTransmission.Internal;
 using CodeElements.NetworkCallTransmission.Proxy;
-using ZeroFormatter;
 
 namespace CodeElements.NetworkCallTransmission
 {
@@ -21,6 +19,7 @@ namespace CodeElements.NetworkCallTransmission
     /// <typeparam name="TInterface">The remote interface. The receiving site must have the same interface available.</typeparam>
     public class CallTransmission<TInterface> : DataTransmitter, IDisposable, IAsyncInterceptor
     {
+        private readonly INetworkCallSerializer _serializer;
         private const int EstimatedDataPerParameter = 200;
         // ReSharper disable once StaticMemberInGenericType
 
@@ -34,8 +33,10 @@ namespace CodeElements.NetworkCallTransmission
         /// <summary>
         ///     Initialize a new instance of <see cref="CallTransmission{TInterface}" />
         /// </summary>
-        public CallTransmission()
+        /// <param name="serializer">The serializer used to serialize/deserialize the objects</param>
+        public CallTransmission(INetworkCallSerializer serializer)
         {
+            _serializer = serializer;
             var interfaceType = typeof(TInterface).GetTypeInfo();
             if (!interfaceType.IsInterface)
                 throw new ArgumentException("Only interfaces accepted.", nameof(TInterface));
@@ -192,7 +193,7 @@ namespace CodeElements.NetworkCallTransmission
             for (var i = 0; i < parameters.Length; i++)
             {
                 var metaOffset = CustomOffset + 12 + i * 4;
-                var parameterLength = ZeroFormatterSerializer.NonGeneric.Serialize(methodCache.ParameterTypes[i],
+                var parameterLength = _serializer.Serialize(methodCache.ParameterTypes[i],
                     ref buffer, bufferOffset, parameters[i]);
                 Buffer.BlockCopy(BitConverter.GetBytes(parameterLength), 0, buffer, metaOffset, 4);
 
@@ -231,11 +232,10 @@ namespace CodeElements.NetworkCallTransmission
                     case CallTransmissionResponseType.MethodExecuted:
                         return null;
                     case CallTransmissionResponseType.ResultReturned:
-                        return ZeroFormatterSerializer.NonGeneric.Deserialize(methodCache.ReturnType, callback.Data,
+                        return _serializer.Deserialize(methodCache.ReturnType, callback.Data,
                             callback.Offset);
                     case CallTransmissionResponseType.Exception:
-                        var up = ZeroFormatterSerializer.Deserialize<IExceptionWrapper>(callback.Data, callback.Offset)
-                            .GetException();
+                        var up = _serializer.DeserializeException(callback.Data, callback.Offset);
                         throw up;
                     case CallTransmissionResponseType.MethodNotImplemented:
                         throw new NotImplementedException("The remote method is not implemented.");

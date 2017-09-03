@@ -6,7 +6,6 @@ using System.Reflection;
 using System.Threading;
 using CodeElements.NetworkCallTransmission.Internal;
 using CodeElements.NetworkCallTransmission.Proxy;
-using ZeroFormatter;
 
 namespace CodeElements.NetworkCallTransmission
 {
@@ -15,14 +14,17 @@ namespace CodeElements.NetworkCallTransmission
     /// </summary>
     public class EventManager : DataTransmitter, IEventManager
     {
+        private readonly INetworkSerializer _serializer;
         private readonly ConcurrentDictionary<ulong, SubscribedEventInfo> _subscribedEvents;
         private readonly ConcurrentDictionary<Type, Lazy<EventProxyInitializationInfo>> _interfaceGeneratedTypes;
 
         /// <summary>
         ///     Initialize a new instance of <see cref="EventManager" />
         /// </summary>
-        public EventManager()
+        /// <param name="serializer">The serializer used to serialize/deserialize the objects</param>
+        public EventManager(INetworkSerializer serializer)
         {
+            _serializer = serializer;
             _subscribedEvents = new ConcurrentDictionary<ulong, SubscribedEventInfo>();
             _interfaceGeneratedTypes = new ConcurrentDictionary<Type, Lazy<EventProxyInitializationInfo>>();
         }
@@ -103,16 +105,15 @@ namespace CodeElements.NetworkCallTransmission
                     {
                         var transmissionInfoLength = BitConverter.ToUInt16(data, offset + 9);
                         if (transmissionInfoLength > 0)
-                            transmissionInfo =
-                                ZeroFormatterSerializer.NonGeneric.Deserialize(
-                                    subscribedEvent.EventHandlerTransmissionInfoType, data, offset + 11);
+                            transmissionInfo = _serializer.Deserialize(subscribedEvent.EventHandlerTransmissionInfoType,
+                                data, offset + 11);
                         else
                             transmissionInfo = null;
 
                         if (responseType == EventResponseType.TriggerEventWithParameter || responseType ==
                             EventResponseType.TriggerEventWithTransmissionInfoAndParameter)
-                            parameter = ZeroFormatterSerializer.NonGeneric.Deserialize(
-                                subscribedEvent.EventHandlerParameterType, data, offset + 11 + transmissionInfoLength);
+                            parameter = _serializer.Deserialize(subscribedEvent.EventHandlerParameterType, data,
+                                offset + 11 + transmissionInfoLength);
                         else
                             parameter = null;
                     }

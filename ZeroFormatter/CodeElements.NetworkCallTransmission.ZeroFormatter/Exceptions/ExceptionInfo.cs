@@ -1,7 +1,7 @@
 ﻿using System;
 using ZeroFormatter;
 
-namespace CodeElements.NetworkCallTransmission.Exceptions
+namespace CodeElements.NetworkCallTransmission.ZeroFormatter.Exceptions
 {
     public abstract class ExceptionInfo
     {

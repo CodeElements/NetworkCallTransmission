@@ -1,4 +1,4 @@
-namespace CodeElements.NetworkCallTransmission.Exceptions
+namespace CodeElements.NetworkCallTransmission.ZeroFormatter.Exceptions
 {
     public enum ExceptionType
     {

@@ -5,6 +5,7 @@ using System.Reflection;
 using System.Threading.Tasks;
 using CodeElements.NetworkCallTransmission.Extensions;
 using CodeElements.NetworkCallTransmission.Internal;
+using CodeElements.NetworkCallTransmission.Memory;
 
 namespace CodeElements.NetworkCallTransmission
 {
@@ -13,19 +14,31 @@ namespace CodeElements.NetworkCallTransmission
     /// </summary>
     public class ExecuterInterfaceCache
     {
-        private ExecuterInterfaceCache(IReadOnlyDictionary<uint, MethodInvoker> methodInvokers)
+        internal const int MaxBufferSize = 2000;
+        internal const int DefaultPoolSize = MaxBufferSize * 524; // ~1 MiB
+
+        private ExecuterInterfaceCache(IReadOnlyDictionary<uint, MethodInvoker> methodInvokers,
+            BufferManager bufferManager)
         {
             MethodInvokers = methodInvokers;
+            BufferManager = bufferManager;
         }
 
         internal IReadOnlyDictionary<uint, MethodInvoker> MethodInvokers { get; }
+        internal BufferManager BufferManager { get; }
+
+        public static ExecuterInterfaceCache Build<TInterface>()
+        {
+            return Build<TInterface>(DefaultPoolSize);
+        }
 
         /// <summary>
         ///     Build the cache for a specific interface
         /// </summary>
         /// <typeparam name="TInterface">The interface which should be mirrored in the cache</typeparam>
+        /// <param name="totalBufferCacheSize">The size of the thread-shared buffer for object serialization. Submit zero if you dont want a global buffer</param>
         /// <returns>Return the thread-safe cache instance</returns>
-        public static ExecuterInterfaceCache Build<TInterface>()
+        public static ExecuterInterfaceCache Build<TInterface>(long totalBufferCacheSize)
         {
             var interfaceType = typeof(TInterface).GetTypeInfo();
             var members = interfaceType.GetMembers();
@@ -53,7 +66,17 @@ namespace CodeElements.NetworkCallTransmission
                     new MethodInvoker(methodInfo, parameterTypes, actualReturnType));
             }
 
-            return new ExecuterInterfaceCache(methodInvokers);
+            BufferManager bufferManager;
+            if (totalBufferCacheSize == 0)
+                bufferManager = BufferManager.CreateBufferManager(0, 0); //No buffers
+            else if (totalBufferCacheSize < MaxBufferSize)
+                throw new ArgumentException(
+                    $"The total buffer size must be greater than the size of one buffer {MaxBufferSize}. Submit zero if you don't want a buffer cache",
+                    nameof(bufferManager));
+            else
+                bufferManager = BufferManager.CreateBufferManager(totalBufferCacheSize, MaxBufferSize);
+
+            return new ExecuterInterfaceCache(methodInvokers, bufferManager);
         }
     }
 }

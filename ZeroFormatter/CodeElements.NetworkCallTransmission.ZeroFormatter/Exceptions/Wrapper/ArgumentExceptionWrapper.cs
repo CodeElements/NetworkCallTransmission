@@ -1,7 +1,7 @@
 using System;
 using ZeroFormatter;
 
-namespace CodeElements.NetworkCallTransmission.Exceptions.Wrapper
+namespace CodeElements.NetworkCallTransmission.ZeroFormatter.Exceptions.Wrapper
 {
     [ZeroFormattable]
     public class ArgumentExceptionWrapper : GenericExceptionInfo<ArgumentException>, IExceptionWrapper

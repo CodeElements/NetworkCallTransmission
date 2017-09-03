@@ -1,8 +1,8 @@
 ﻿using System;
-using CodeElements.NetworkCallTransmission.Exceptions.Wrapper;
+using CodeElements.NetworkCallTransmission.ZeroFormatter.Exceptions.Wrapper;
 using ZeroFormatter;
 
-namespace CodeElements.NetworkCallTransmission.Exceptions
+namespace CodeElements.NetworkCallTransmission.ZeroFormatter.Exceptions
 {
     [Union(new[]
     {

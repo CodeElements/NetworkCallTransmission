@@ -20,10 +20,12 @@ namespace CodeElements.NetworkCallTransmission.Test
             var buffer = data.Array;
             Buffer.BlockCopy(new byte[ProtocolOffset], 0, buffer, 0, ProtocolOffset); //null all offset bytes
 
-            var result = await CallTransmissionExecuter.ReceiveData(buffer, ProtocolOffset);
-            Buffer.BlockCopy(new byte[ExecuterOffset], 0, result.Array, 0, ExecuterOffset);
+            using (var result = await CallTransmissionExecuter.ReceiveData(buffer, ProtocolOffset))
+            {
+                Buffer.BlockCopy(new byte[ExecuterOffset], 0, result.Buffer, 0, ExecuterOffset);
 
-            CallTransmission.ReceiveData(result.Array, ExecuterOffset);
+                CallTransmission.ReceiveData(result.Buffer, ExecuterOffset);
+            }
         }
 
         private class OffsetTestInterfaceImplementation : IOffsetTestInterface

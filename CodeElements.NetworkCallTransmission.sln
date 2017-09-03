@@ -5,7 +5,23 @@ VisualStudioVersion = 15.0.26730.12
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CodeElements.NetworkCallTransmission", "CodeElements.NetworkCallTransmission\CodeElements.NetworkCallTransmission.csproj", "{EC21E577-2734-4AA2-815E-C289DB8A4719}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CodeElements.NetworkCallTransmission.Test", "CodeElements.NetworkCallTransmission.Test\CodeElements.NetworkCallTransmission.Test.csproj", "{054801E0-AC7A-468A-9715-286B32C8F62E}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CodeElements.NetworkCallTransmission.Test", "CodeElements.NetworkCallTransmission.Test\CodeElements.NetworkCallTransmission.Test.csproj", "{054801E0-AC7A-468A-9715-286B32C8F62E}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Serializer", "Serializer", "{918EBF0A-F980-4C01-A4D4-28DE69633CCB}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "NetSerializer", "NetSerializer", "{BBCFC1C8-1647-4900-9DDE-9B42C332D87F}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "NetSerializer", "NetSerializer\NetSerializer\NetSerializer\NetSerializer.csproj", "{09A3485C-3134-4C4D-800A-A9502F2084FD}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CodeElements.NetworkCallTransmission.NetSerializer", "NetSerializer\CodeElements.NetworkCallTransmission.NetSerializer\CodeElements.NetworkCallTransmission.NetSerializer.csproj", "{1D1F7463-7773-403C-8B0B-6DE0CF22434B}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "ZeroFormatter", "ZeroFormatter", "{2B1207E6-F16A-434A-981F-44CF2836D68F}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CodeElements.NetworkCallTransmission.ZeroFormatter", "ZeroFormatter\CodeElements.NetworkCallTransmission.ZeroFormatter\CodeElements.NetworkCallTransmission.ZeroFormatter.csproj", "{D177EE57-84BF-4F59-B728-DC3C86350204}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ZeroFormatter.NETCore", "ZeroFormatter\ZeroFormatter\src\ZeroFormatter.NETCore\ZeroFormatter.NETCore.csproj", "{6425EC96-962D-486F-8782-834C64AD7DE0}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ZeroFormatter.Interfaces.NETCore", "ZeroFormatter\ZeroFormatter\src\ZeroFormatter.Interfaces.NETCore\ZeroFormatter.Interfaces.NETCore.csproj", "{6E9D7B52-D6BA-45F9-A7EA-F0ACC9D551F6}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -21,9 +37,38 @@ Global
 		{054801E0-AC7A-468A-9715-286B32C8F62E}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{054801E0-AC7A-468A-9715-286B32C8F62E}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{054801E0-AC7A-468A-9715-286B32C8F62E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{09A3485C-3134-4C4D-800A-A9502F2084FD}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{09A3485C-3134-4C4D-800A-A9502F2084FD}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{09A3485C-3134-4C4D-800A-A9502F2084FD}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{09A3485C-3134-4C4D-800A-A9502F2084FD}.Release|Any CPU.Build.0 = Release|Any CPU
+		{1D1F7463-7773-403C-8B0B-6DE0CF22434B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1D1F7463-7773-403C-8B0B-6DE0CF22434B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1D1F7463-7773-403C-8B0B-6DE0CF22434B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1D1F7463-7773-403C-8B0B-6DE0CF22434B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D177EE57-84BF-4F59-B728-DC3C86350204}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D177EE57-84BF-4F59-B728-DC3C86350204}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D177EE57-84BF-4F59-B728-DC3C86350204}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D177EE57-84BF-4F59-B728-DC3C86350204}.Release|Any CPU.Build.0 = Release|Any CPU
+		{6425EC96-962D-486F-8782-834C64AD7DE0}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6425EC96-962D-486F-8782-834C64AD7DE0}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6425EC96-962D-486F-8782-834C64AD7DE0}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6425EC96-962D-486F-8782-834C64AD7DE0}.Release|Any CPU.Build.0 = Release|Any CPU
+		{6E9D7B52-D6BA-45F9-A7EA-F0ACC9D551F6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6E9D7B52-D6BA-45F9-A7EA-F0ACC9D551F6}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6E9D7B52-D6BA-45F9-A7EA-F0ACC9D551F6}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6E9D7B52-D6BA-45F9-A7EA-F0ACC9D551F6}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{BBCFC1C8-1647-4900-9DDE-9B42C332D87F} = {918EBF0A-F980-4C01-A4D4-28DE69633CCB}
+		{09A3485C-3134-4C4D-800A-A9502F2084FD} = {BBCFC1C8-1647-4900-9DDE-9B42C332D87F}
+		{1D1F7463-7773-403C-8B0B-6DE0CF22434B} = {BBCFC1C8-1647-4900-9DDE-9B42C332D87F}
+		{2B1207E6-F16A-434A-981F-44CF2836D68F} = {918EBF0A-F980-4C01-A4D4-28DE69633CCB}
+		{D177EE57-84BF-4F59-B728-DC3C86350204} = {2B1207E6-F16A-434A-981F-44CF2836D68F}
+		{6425EC96-962D-486F-8782-834C64AD7DE0} = {2B1207E6-F16A-434A-981F-44CF2836D68F}
+		{6E9D7B52-D6BA-45F9-A7EA-F0ACC9D551F6} = {2B1207E6-F16A-434A-981F-44CF2836D68F}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {2992ACA4-3ED3-45C1-922E-619118099E5D}

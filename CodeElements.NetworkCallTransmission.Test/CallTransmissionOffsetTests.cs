@@ -17,12 +17,13 @@ namespace CodeElements.NetworkCallTransmission.Test
             var buffer = new byte[data.Count + Offset];
             Buffer.BlockCopy(data.Array, 0, buffer, Offset, data.Count);
 
-            var result = await CallTransmissionExecuter.ReceiveData(buffer, Offset);
+            using (var result = await CallTransmissionExecuter.ReceiveData(buffer, Offset))
+            {
+                var responseBuffer = new byte[result.Length + Offset];
+                Buffer.BlockCopy(result.Buffer, 0, responseBuffer, Offset, result.Length);
 
-            var responseBuffer = new byte[result.Count + Offset];
-            Buffer.BlockCopy(result.Array, 0, responseBuffer, Offset, result.Count);
-
-            CallTransmission.ReceiveData(responseBuffer, Offset);
+                CallTransmission.ReceiveData(responseBuffer, Offset);
+            }
         }
 
         [Fact]

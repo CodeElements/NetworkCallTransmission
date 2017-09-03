@@ -2,7 +2,7 @@
 using System.Linq;
 using ZeroFormatter;
 
-namespace CodeElements.NetworkCallTransmission.Exceptions.Wrapper
+namespace CodeElements.NetworkCallTransmission.ZeroFormatter.Exceptions.Wrapper
 {
     [ZeroFormattable]
     public class AggregateExceptionWrapper : GenericExceptionInfo<AggregateException>, IExceptionWrapper

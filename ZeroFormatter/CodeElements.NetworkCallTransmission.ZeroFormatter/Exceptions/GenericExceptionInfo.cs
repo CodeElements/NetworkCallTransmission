@@ -1,6 +1,6 @@
 using System;
 
-namespace CodeElements.NetworkCallTransmission.Exceptions
+namespace CodeElements.NetworkCallTransmission.ZeroFormatter.Exceptions
 {
     public abstract class GenericExceptionInfo<TException> : ExceptionInfo where TException : Exception
     {
