@@ -52,7 +52,7 @@ namespace CodeElements.NetworkCallTransmission
         /// <param name="buffer">The array of unsigned bytes which contains the information to execute the method.</param>
         /// <param name="offset">The index into buffer at which the data begins</param>
         /// <returns>Returns the answer which should be sent back to the client</returns>
-        public async Task<ResponseData> ReceiveData(byte[] buffer, int offset)
+        public async Task<ArraySegment<byte>> ReceiveData(byte[] buffer, int offset)
         {
             //PROTOCOL
             //CALL:
@@ -93,7 +93,7 @@ namespace CodeElements.NetworkCallTransmission
                 var response = new byte[CustomOffset /* user offset */ + 8 /* Header */ + 1 /* response type */];
                 WriteResponseHeader(response);
                 response[CustomOffset + 8] = (byte) CallTransmissionResponseType.MethodNotImplemented;
-                return new ResponseData(response);
+                return new ArraySegment<byte>(response);
             }
 
             var parameters = new object[methodInvoker.ParameterCount];
@@ -116,13 +116,14 @@ namespace CodeElements.NetworkCallTransmission
             }
             catch (Exception e)
             {
-                var data = ExceptionSerializer.Serialize(e);
+                var exceptionInfo = ExceptionFactory.PackException(e);
                 var response = new byte[CustomOffset /* user offset */ + 8 /* Header */ + 1 /* response type */ +
-                                        data.Length /* exception */];
+                                        EstimatedResultBufferSize /* exception */];
+                var length = ZeroFormatterSerializer.Serialize(ref response, CustomOffset + 9, exceptionInfo);
+
                 WriteResponseHeader(response);
                 response[CustomOffset + 8] = (byte) CallTransmissionResponseType.Exception;
-                Buffer.BlockCopy(data, 0, response, CustomOffset + 9, data.Length);
-                return new ResponseData(response);
+                return new ArraySegment<byte>(response, 0, length + 9);
             }
 
             if (methodInvoker.ReturnsResult)
@@ -136,14 +137,14 @@ namespace CodeElements.NetworkCallTransmission
                 var responseLength =
                     ZeroFormatterSerializer.NonGeneric.Serialize(methodInvoker.ReturnType, ref response,
                         CustomOffset + 9, result);
-                return new ResponseData(response, responseLength + CustomOffset + 9);
+                return new ArraySegment<byte>(response, 0, responseLength + CustomOffset + 9);
             }
             else
             {
                 var response = new byte[CustomOffset /* user offset */ + 8 /* Header */ + 1 /* response type */];
                 WriteResponseHeader(response);
                 response[CustomOffset + 8] = (byte) CallTransmissionResponseType.MethodExecuted;
-                return new ResponseData(response);
+                return new ArraySegment<byte>(response);
             }
         }
     }

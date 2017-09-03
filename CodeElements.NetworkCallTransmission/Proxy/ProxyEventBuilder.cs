@@ -17,15 +17,17 @@ namespace CodeElements.NetworkCallTransmission.Proxy
 
         public ProxyEventBuilder()
         {
-            _getInterceptor = typeof(IEventInterceptorProxy)
+            var eventInterceptorProxyType = typeof(IEventInterceptorProxy).GetTypeInfo();
+            _getInterceptor = eventInterceptorProxyType
                 .GetProperty(nameof(IEventInterceptorProxy.Interceptor)).GetGetMethod();
-            _getEvents = typeof(IEventInterceptorProxy).GetProperty(nameof(IEventInterceptorProxy.Events))
+            _getEvents = eventInterceptorProxyType.GetProperty(nameof(IEventInterceptorProxy.Events))
                 .GetGetMethod();
 
+            var eventInterceptorType = typeof(IEventInterceptor).GetTypeInfo();
             _eventInterceptorEventSubscribed =
-                typeof(IEventInterceptor).GetMethod(nameof(IEventInterceptor.EventSubscribed));
+                eventInterceptorType.GetMethod(nameof(IEventInterceptor.EventSubscribed));
             _eventInterceptorEventUnsubscribed =
-                typeof(IEventInterceptor).GetMethod(nameof(IEventInterceptor.EventUnsubscribed));
+                eventInterceptorType.GetMethod(nameof(IEventInterceptor.EventUnsubscribed));
         }
 
         public FieldBuilder CreateEvent(int eventIndex, Type interfaceType, FieldInfo interceptorField, EventInfo eventInfo, TypeBuilder typeBuilder)
@@ -56,8 +58,9 @@ namespace CodeElements.NetworkCallTransmission.Proxy
             builder.SetAddOnMethod(addMethod);
             builder.SetRemoveOnMethod(removeMethod);
 
-            typeBuilder.DefineMethodOverride(addMethod, interfaceType.GetMethod(addMethodName));
-            typeBuilder.DefineMethodOverride(removeMethod, interfaceType.GetMethod(remMethodName));
+            var interfaceTypeInfo = interfaceType.GetTypeInfo();
+            typeBuilder.DefineMethodOverride(addMethod, interfaceTypeInfo.GetMethod(addMethodName));
+            typeBuilder.DefineMethodOverride(removeMethod, interfaceTypeInfo.GetMethod(remMethodName));
 
             /*var raiseMethod = typeBuilder.DefineMethod("On" + eventInfo.Name,
                 MethodAttributes.Public | MethodAttributes.HideBySig, CallingConventions.HasThis, null,
@@ -95,10 +98,10 @@ namespace CodeElements.NetworkCallTransmission.Proxy
 
         private void EmitEventMethodBody(MethodBuilder methodBuilder, int eventIndex, EventInfo eventInfo, FieldBuilder eventField, bool remove)
         {
-            var action = typeof(Delegate).GetMethod(remove ? nameof(Delegate.Remove) : nameof(Delegate.Combine),
+            var action = typeof(Delegate).GetTypeInfo().GetMethod(remove ? nameof(Delegate.Remove) : nameof(Delegate.Combine),
                 new[] {typeof(Delegate), typeof(Delegate)});
 
-            var compareExchange = typeof(Interlocked).GetMethods()
+            var compareExchange = typeof(Interlocked).GetTypeInfo().GetMethods()
                 .First(x => x.IsGenericMethod && x.Name == nameof(Interlocked.CompareExchange))
                 .MakeGenericMethod(eventInfo.EventHandlerType);
 

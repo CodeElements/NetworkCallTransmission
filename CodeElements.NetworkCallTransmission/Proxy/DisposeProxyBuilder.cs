@@ -18,7 +18,7 @@ namespace CodeElements.NetworkCallTransmission.Proxy
             il.Emit(OpCodes.Callvirt, disposeProxyMethod);
             il.Emit(OpCodes.Ret);
 
-            typeBuilder.DefineMethodOverride(methodBuilder, typeof(IDisposable).GetMethod(nameof(IDisposable.Dispose)));
+            typeBuilder.DefineMethodOverride(methodBuilder, typeof(IDisposable).GetTypeInfo().GetMethod(nameof(IDisposable.Dispose)));
         }
     }
 }

@@ -15,15 +15,15 @@ namespace CodeElements.NetworkCallTransmission.Test
             CallTransmissionExecuter.CustomOffset = ExecuterOffset;
         }
 
-        protected override async Task SendData(ResponseData data)
+        protected override async Task SendData(ArraySegment<byte> data)
         {
-            var buffer = data.Data;
+            var buffer = data.Array;
             Buffer.BlockCopy(new byte[ProtocolOffset], 0, buffer, 0, ProtocolOffset); //null all offset bytes
 
             var result = await CallTransmissionExecuter.ReceiveData(buffer, ProtocolOffset);
-            Buffer.BlockCopy(new byte[ExecuterOffset], 0, result.Data, 0, ExecuterOffset);
+            Buffer.BlockCopy(new byte[ExecuterOffset], 0, result.Array, 0, ExecuterOffset);
 
-            CallTransmission.ReceiveData(result.Data, ExecuterOffset);
+            CallTransmission.ReceiveData(result.Array, ExecuterOffset);
         }
 
         private class OffsetTestInterfaceImplementation : IOffsetTestInterface

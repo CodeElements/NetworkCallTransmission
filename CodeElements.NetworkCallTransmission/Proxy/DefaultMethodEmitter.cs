@@ -19,21 +19,24 @@ namespace CodeElements.NetworkCallTransmission.Proxy
 
 		public DefaultMethodEmitter()
 		{
-			_getMethods = typeof(IAsyncInterceptorProxy).GetProperty(nameof(IAsyncInterceptorProxy.Methods)).GetGetMethod();
-			_getInterceptor = typeof(IAsyncInterceptorProxy).GetProperty(nameof(IAsyncInterceptorProxy.Interceptor)).GetGetMethod();
-			_invocationReturn = typeof(InvocationInfo).GetProperty(nameof(InvocationInfo.ReturnValue)).GetGetMethod();
+		    var asyncInterceptorProxyType = typeof(IAsyncInterceptorProxy).GetTypeInfo();
+		    var invocationInfoType = typeof(InvocationInfo).GetTypeInfo();
 
-			var asyncInterceptorMethods = typeof(IAsyncInterceptor).GetMethods();
-			_asyncHandlerMethod =
-				asyncInterceptorMethods.First(x => x.Name == nameof(IAsyncInterceptor.InterceptAsynchronous) && !x.IsGenericMethod);
-			_asyncHandlerMethodGeneric =
-				asyncInterceptorMethods.First(x => x.Name == nameof(IAsyncInterceptor.InterceptAsynchronous) && x.IsGenericMethod);
+		    _getMethods = asyncInterceptorProxyType.GetProperty(nameof(IAsyncInterceptorProxy.Methods)).GetGetMethod();
+		    _getInterceptor = asyncInterceptorProxyType.GetProperty(nameof(IAsyncInterceptorProxy.Interceptor)).GetGetMethod();
+		    _invocationReturn = invocationInfoType.GetProperty(nameof(InvocationInfo.ReturnValue)).GetGetMethod();
 
-			_invocationInfoCtor = typeof(InvocationInfo).GetConstructor(new[]
-			{
-				typeof(MethodInfo), typeof(object[])
-			});
-		}
+		    var asyncInterceptorMethods = typeof(IAsyncInterceptor).GetTypeInfo().GetMethods();
+		    _asyncHandlerMethod =
+		        asyncInterceptorMethods.First(x => x.Name == nameof(IAsyncInterceptor.InterceptAsynchronous) && !x.IsGenericMethod);
+		    _asyncHandlerMethodGeneric =
+		        asyncInterceptorMethods.First(x => x.Name == nameof(IAsyncInterceptor.InterceptAsynchronous) && x.IsGenericMethod);
+
+		    _invocationInfoCtor = invocationInfoType.GetConstructor(new[]
+		    {
+		        typeof(MethodInfo), typeof(object[])
+		    });
+        }
 
 		public void EmitMethodBody(ILGenerator il, MethodInfo method, int methodIndex, FieldInfo field)
 		{
@@ -41,9 +44,9 @@ namespace CodeElements.NetworkCallTransmission.Proxy
 
 			if (method.ReturnType == typeof(Task))
 				actualReturnType = null;
-			else if (method.ReturnType.IsGenericType &&
+			else if (method.ReturnType.GetTypeInfo().IsGenericType &&
 			         method.ReturnType.GetGenericTypeDefinition() == typeof(Task<>))
-				actualReturnType = method.ReturnType.GetGenericArguments()[0];
+				actualReturnType = method.ReturnType.GenericTypeArguments[0];
 			else
 				throw new ArgumentException("Only tasks are supported as return type.", method.ToString());
 
@@ -115,7 +118,7 @@ namespace CodeElements.NetworkCallTransmission.Proxy
 				il.Emit(OpCodes.Ldc_I4, index);
 
 				il.Emit(OpCodes.Ldarg, argumentPosition);
-				if (parameterType.IsValueType)
+				if (parameterType.GetTypeInfo().IsValueType)
 					il.Emit(OpCodes.Box, parameterType);
 
 				il.Emit(OpCodes.Stelem_Ref);

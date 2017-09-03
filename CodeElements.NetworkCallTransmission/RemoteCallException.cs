@@ -1,6 +1,4 @@
 ﻿using System;
-using System.Diagnostics.Contracts;
-using System.Runtime.Serialization;
 
 namespace CodeElements.NetworkCallTransmission
 {
@@ -14,9 +12,14 @@ namespace CodeElements.NetworkCallTransmission
         ///     Initialize a new instance of <see cref="RemoteCallException" />
         /// </summary>
         /// <param name="exception">The exception that should be wrapped.</param>
-        public RemoteCallException(Exception exception) : base(exception.Message, exception)
+        internal RemoteCallException(Exception exception) : base(exception.Message, exception)
         {
-            ExceptionType = exception.GetType().FullName;
+            ClassName = exception.GetType().AssemblyQualifiedName;
+        }
+
+        internal RemoteCallException(string message, Exception innerException, string className) : base(message, innerException)
+        {
+            ClassName = className;
         }
 
         /// <summary>
@@ -27,14 +30,6 @@ namespace CodeElements.NetworkCallTransmission
         }
 
         /// <summary>
-        ///     For deserialization
-        /// </summary>
-        protected RemoteCallException(SerializationInfo info, StreamingContext context) : base(info, context)
-        {
-            ExceptionType = info.GetString("ExceptionType");
-        }
-
-        /// <summary>
         ///     The exception message
         /// </summary>
         public override string Message
@@ -42,28 +37,15 @@ namespace CodeElements.NetworkCallTransmission
             get
             {
                 var s = base.Message;
-                if (!string.IsNullOrEmpty(ExceptionType))
-                    return s + Environment.NewLine + $"Exception of type '{ExceptionType}' thrown.";
+                if (!string.IsNullOrEmpty(ClassName))
+                    return s + Environment.NewLine + $"Exception of type '{ClassName}' thrown.";
                 return s;
             }
         }
 
         /// <summary>
-        ///     The type of the exception (Fullname)
+        ///     The type of the exception (AssemblyQualifiedName)
         /// </summary>
-        public string ExceptionType { get; set; }
-
-        /// <summary>
-        ///     Serialize the exception
-        /// </summary>
-        public override void GetObjectData(SerializationInfo info, StreamingContext context)
-        {
-            if (info == null)
-                throw new ArgumentNullException(nameof(info));
-
-            Contract.EndContractBlock();
-            base.GetObjectData(info, context);
-            info.AddValue("ExceptionType", ExceptionType, typeof(string));
-        }
+        public string ClassName { get; set; }
     }
 }

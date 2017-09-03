@@ -29,7 +29,7 @@ namespace CodeElements.NetworkCallTransmission.Internal
             var permissionsAttribute = eventInfo.GetCustomAttribute<EventPermissionsAttribute>();
             RequiredPermissions = permissionsAttribute?.RequiredPermissions;
 
-            var genericArguments = eventInfo.EventHandlerType.GetGenericArguments();
+            var genericArguments = eventInfo.EventHandlerType.GenericTypeArguments;
             TransmissionInfoType = genericArguments[0];
             if (genericArguments.Length > 1)
                 EventArgsType = genericArguments[1];
@@ -75,14 +75,14 @@ namespace CodeElements.NetworkCallTransmission.Internal
 
         private static Delegate BuildDynamicHandler(Type delegateType, Action<object[]> func, ulong id)
         {
-            var invokeMethod = delegateType.GetMethod(nameof(EventHandler.Invoke));
+            var invokeMethod = delegateType.GetTypeInfo().GetMethod(nameof(EventHandler.Invoke));
             var parms = invokeMethod.GetParameters().Select(parm => Expression.Parameter(parm.ParameterType, parm.Name))
                 .ToArray();
             var instance = func.Target == null ? null : Expression.Constant(func.Target);
             var converted = parms.Select(parm => (Expression) Expression.Convert(parm, typeof(object))).ToList();
             converted.Insert(0, Expression.Convert(Expression.Constant(id), typeof(object)));
 
-            var call = Expression.Call(instance, func.Method, Expression.NewArrayInit(typeof(object), converted));
+            var call = Expression.Call(instance, func.GetMethodInfo(), Expression.NewArrayInit(typeof(object), converted));
             var expr = Expression.Lambda(delegateType, call, parms);
             return expr.Compile();
         }

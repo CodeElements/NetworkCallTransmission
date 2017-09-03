@@ -18,18 +18,18 @@ namespace CodeElements.NetworkCallTransmission.Test
             testEventSubscriber.SendData += DefaultEventSubscriberOnSendData;
         }
 
-        private void DefaultEventSubscriberOnSendData(object sender, ResponseData responseData)
+        private void DefaultEventSubscriberOnSendData(object sender, ArraySegment<byte> responseData)
         {
             EventSubscriberSentData = true;
 
             var subscriber = (IEventSubscriber) sender;
-            EventRegister.ReceiveResponse(responseData.Data, 0, subscriber);
+            EventRegister.ReceiveResponse(responseData.Array, 0, subscriber);
         }
     }
 
     public interface ITestEventSubscriber
     {
-        event EventHandler<ResponseData> SendData;
+        event EventHandler<ArraySegment<byte>> SendData;
     }
 
     public class DefaultEventSubscriber : IEventSubscriber, ITestEventSubscriber
@@ -39,7 +39,7 @@ namespace CodeElements.NetworkCallTransmission.Test
             EventManager = new EventManager{SendData = SendDataHandler};
         }
 
-        public event EventHandler<ResponseData> SendData;
+        public event EventHandler<ArraySegment<byte>> SendData;
 
         public bool ReceivedData { get; private set; }
         public EventManager EventManager { get; }
@@ -61,7 +61,7 @@ namespace CodeElements.NetworkCallTransmission.Test
             ReceivedData = false;
         }
 
-        private Task SendDataHandler(ResponseData data)
+        private Task SendDataHandler(ArraySegment<byte> data)
         {
             SendData?.Invoke(this, data);
             return Task.CompletedTask;

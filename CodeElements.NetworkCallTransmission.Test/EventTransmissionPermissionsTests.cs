@@ -24,10 +24,11 @@ namespace CodeElements.NetworkCallTransmission.Test
         {
             var raised = false;
 
-            void EventsOnTestEvent(object sender, TestObject o)
+            void EventsOnTestEvent(TestTransmissionInfo o, string args)
             {
                 Assert.Equal("2A9524F2-8125-4596-8CBE-41F673AF16DB", o.TestString);
                 Assert.True(o.TestBool);
+                Assert.Equal("124a", args);
                 raised = true;
             }
 
@@ -36,14 +37,15 @@ namespace CodeElements.NetworkCallTransmission.Test
             _eventSubscriber.AllowEvent = false;
 
             _permissionsTestEventsImpl.TriggerEvent(
-                new TestObject {TestBool = true, TestString = "2A9524F2-8125-4596-8CBE-41F673AF16DB"});
+                new TestTransmissionInfo {TestBool = true, TestString = "2A9524F2-8125-4596-8CBE-41F673AF16DB"}, "124a");
 
             Assert.False(raised);
 
             _eventSubscriber.AllowEvent = true;
 
             _permissionsTestEventsImpl.TriggerEvent(
-                new TestObject { TestBool = true, TestString = "2A9524F2-8125-4596-8CBE-41F673AF16DB" });
+                new TestTransmissionInfo {TestBool = true, TestString = "2A9524F2-8125-4596-8CBE-41F673AF16DB"},
+                "124a");
 
             Assert.True(raised);
         }
@@ -56,7 +58,7 @@ namespace CodeElements.NetworkCallTransmission.Test
             EventManager = new EventManager { SendData = SendDataHandler };
         }
 
-        private Task SendDataHandler(ResponseData data)
+        private Task SendDataHandler(ArraySegment<byte> data)
         {
             SendData?.Invoke(this, data);
             return Task.CompletedTask;
@@ -70,7 +72,7 @@ namespace CodeElements.NetworkCallTransmission.Test
             Assert.Equal(1, permissions[0]);
             Assert.Equal(51, permissions[1]);
             Assert.Equal(2, permissions.Length);
-            var testObject = Assert.IsType<TestObject>(parameter);
+            var testObject = Assert.IsType<TestTransmissionInfo>(parameter);
 
             Assert.Equal("2A9524F2-8125-4596-8CBE-41F673AF16DB", testObject.TestString);
             Assert.True(testObject.TestBool);
@@ -84,27 +86,27 @@ namespace CodeElements.NetworkCallTransmission.Test
             return Task.CompletedTask;
         }
 
-        public event EventHandler<ResponseData> SendData;
+        public event EventHandler<ArraySegment<byte>> SendData;
     }
 
     public interface IPermissionsTestEvents
     {
         [EventPermissions(1, 51)]
-        event TransmittedEventHandler<TransmissionInfo, TestObject> TestEvent;
+        event TransmittedEventHandler<TestTransmissionInfo, string> TestEvent;
     }
 
     public class PermissionsTestEventsImpl : IPermissionsTestEvents
     {
-        public event TransmittedEventHandler<TransmissionInfo, TestObject> TestEvent;
+        public event TransmittedEventHandler<TestTransmissionInfo, string> TestEvent;
 
-        public void TriggerEvent(TestObject args)
+        public void TriggerEvent(TestTransmissionInfo transmissionInfo, string param)
         {
-            TestEvent?.Invoke(TransmissionInfo.Empty, args);
+            TestEvent?.Invoke(transmissionInfo, param);
         }
     }
 
     [ZeroFormattable]
-    public class TestObject
+    public class TestTransmissionInfo
     {
         [Index(0)]
         public virtual string TestString { get; set; }

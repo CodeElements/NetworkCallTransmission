@@ -1,14 +1,9 @@
-﻿using System;
-using System.Diagnostics;
-using Xunit;
+﻿using Xunit;
 
 namespace CodeElements.NetworkCallTransmission.Test
 {
     public class EventTransmissionBasicTests : EventTransmissionTestBase
     {
-        private readonly DefaultEventSubscriber _eventSubscriber;
-        private readonly BasicTestEventsImpl _basicTestEventsImpl;
-
         public EventTransmissionBasicTests()
         {
             EventRegister.RegisterEvents<IBasicTestEvents>(_basicTestEventsImpl = new BasicTestEventsImpl());
@@ -16,6 +11,9 @@ namespace CodeElements.NetworkCallTransmission.Test
             _eventSubscriber = new DefaultEventSubscriber();
             ConnectTestEventSubscriber(_eventSubscriber);
         }
+
+        private readonly DefaultEventSubscriber _eventSubscriber;
+        private readonly BasicTestEventsImpl _basicTestEventsImpl;
 
         [Fact]
         public void TestEventManagerGetEvents()
@@ -26,38 +24,14 @@ namespace CodeElements.NetworkCallTransmission.Test
         }
 
         [Fact]
-        public void TestEventManagerSubscribeUnsubscribeEvents()
-        {
-            void Handler1(TransmissionInfo args) => Debug.Print("");
-            void Handler2(string sender, string args) => Debug.Print("");
-            void Handler3(TransmissionInfo sender, bool args) => Debug.Print("");
-            void Handler31(TransmissionInfo sender, bool args) => Debug.Print("");
-            void Handler32(TransmissionInfo sender, bool args) => Debug.Print("");
-
-            var events = _eventSubscriber.EventManager.GetEvents<IBasicTestEvents>();
-            events.Events.TestEvent1 += Handler1;
-            events.Events.TestEvent2 += Handler2;
-            events.Events.TestEvent1 -= Handler1;
-            events.Events.TestEvent3 += Handler3;
-            events.Events.TestEvent3 += Handler31;
-            events.Events.TestEvent3 -= Handler3;
-            events.Events.TestEvent3 -= Handler32;
-            events.Events.TestEvent3 += Handler32;
-            events.Events.TestEvent2 -= Handler2;
-        }
-
-        [Fact]
-        public void TestEventRegisterTriggerWithoutClients()
-        {
-            _basicTestEventsImpl.TriggerTestEvent1();
-            _basicTestEventsImpl.TriggerTestEvent2("asd", "as435");
-        }
-
-        [Fact]
         public void TestEventManagerReceiveEvent()
         {
             var receivedEvent1 = false;
-            void Handler1(TransmissionInfo transmissionInfo) => receivedEvent1 = true;
+
+            void Handler1(TransmissionInfo transmissionInfo)
+            {
+                receivedEvent1 = true;
+            }
 
             var events = _eventSubscriber.EventManager.GetEvents<IBasicTestEvents>();
             events.Events.TestEvent1 += Handler1;
@@ -79,10 +53,58 @@ namespace CodeElements.NetworkCallTransmission.Test
         }
 
         [Fact]
+        public void TestEventManagerSubscribeUnsubscribeEvents()
+        {
+            void Nop()
+            {
+            }
+
+            void Handler1(TransmissionInfo args)
+            {
+                Nop();
+            }
+
+            void Handler2(string sender, string args)
+            {
+                Nop();
+            }
+
+            void Handler3(TransmissionInfo sender, bool args)
+            {
+                Nop();
+            }
+
+            void Handler31(TransmissionInfo sender, bool args)
+            {
+                Nop();
+            }
+
+            void Handler32(TransmissionInfo sender, bool args)
+            {
+                Nop();
+            }
+
+            var events = _eventSubscriber.EventManager.GetEvents<IBasicTestEvents>();
+            events.Events.TestEvent1 += Handler1;
+            events.Events.TestEvent2 += Handler2;
+            events.Events.TestEvent1 -= Handler1;
+            events.Events.TestEvent3 += Handler3;
+            events.Events.TestEvent3 += Handler31;
+            events.Events.TestEvent3 -= Handler3;
+            events.Events.TestEvent3 -= Handler32;
+            events.Events.TestEvent3 += Handler32;
+            events.Events.TestEvent2 -= Handler2;
+        }
+
+        [Fact]
         public void TestEventManagerSuspendResume()
         {
             var receivedEvent3 = false;
-            void Handler3(object sender, bool args) => receivedEvent3 = receivedEvent3 = true;
+
+            void Handler3(object sender, bool args)
+            {
+                receivedEvent3 = receivedEvent3 = true;
+            }
 
             var events = _eventSubscriber.EventManager.GetEvents<IBasicTestEvents>();
             events.SuspendSubscribing();
@@ -97,6 +119,13 @@ namespace CodeElements.NetworkCallTransmission.Test
 
             _basicTestEventsImpl.TriggerTestEvent3(true);
             Assert.True(receivedEvent3);
+        }
+
+        [Fact]
+        public void TestEventRegisterTriggerWithoutClients()
+        {
+            _basicTestEventsImpl.TriggerTestEvent1();
+            _basicTestEventsImpl.TriggerTestEvent2("asd", "as435");
         }
     }
 

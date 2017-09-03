@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Linq;
+using System.Reflection;
 using System.Threading.Tasks;
 using CodeElements.NetworkCallTransmission.Internal;
 using Xunit;
@@ -13,7 +14,7 @@ namespace CodeElements.NetworkCallTransmission.Test.Internal
         {
             var methods = new TestMethods();
             var method =
-                methods.GetType().GetMethods().Single(x => x.Name == nameof(TestMethods.MethodWithoutParameters));
+                methods.GetType().GetTypeInfo().GetMethods().Single(x => x.Name == nameof(TestMethods.MethodWithoutParameters));
 
             var methodInvoker = new MethodInvoker(method, null, null);
             await methodInvoker.Invoke(methods, null);
@@ -26,7 +27,7 @@ namespace CodeElements.NetworkCallTransmission.Test.Internal
         {
             var methods = new TestMethods();
             var method =
-                methods.GetType().GetMethods().Single(x => x.Name == nameof(TestMethods.MethodWithParameters));
+                methods.GetType().GetTypeInfo().GetMethods().Single(x => x.Name == nameof(TestMethods.MethodWithParameters));
 
             var methodInvoker = new MethodInvoker(method, null, null);
             await methodInvoker.Invoke(methods, new object[] {"asd", 123, this});
@@ -39,7 +40,7 @@ namespace CodeElements.NetworkCallTransmission.Test.Internal
         {
             var methods = new TestMethods();
             var method =
-                methods.GetType().GetMethods().Single(x => x.Name == nameof(TestMethods.MethodWithParameters));
+                methods.GetType().GetTypeInfo().GetMethods().Single(x => x.Name == nameof(TestMethods.MethodWithParameters));
 
             var methodInvoker = new MethodInvoker(method, null, null);
             await Assert.ThrowsAsync<InvalidCastException>(
@@ -53,7 +54,7 @@ namespace CodeElements.NetworkCallTransmission.Test.Internal
         {
             var methods = new TestMethods();
             var method =
-                methods.GetType().GetMethods().Single(x => x.Name == nameof(TestMethods.MethodWithParameters));
+                methods.GetType().GetTypeInfo().GetMethods().Single(x => x.Name == nameof(TestMethods.MethodWithParameters));
 
             var methodInvoker = new MethodInvoker(method, null, null);
             await Assert.ThrowsAsync<IndexOutOfRangeException>(
@@ -67,7 +68,7 @@ namespace CodeElements.NetworkCallTransmission.Test.Internal
         {
             var methods = new TestMethods();
             var method =
-                methods.GetType().GetMethods().Single(x => x.Name == nameof(TestMethods.MethodWithReturnValue));
+                methods.GetType().GetTypeInfo().GetMethods().Single(x => x.Name == nameof(TestMethods.MethodWithReturnValue));
 
             var methodInvoker = new MethodInvoker(method, null, null);
             var task = methodInvoker.Invoke(methods, null);

@@ -43,8 +43,9 @@ namespace CodeElements.NetworkCallTransmission.Proxy
             il.Emit(OpCodes.Stfld, field);
             il.Emit(OpCodes.Ret);
 
-            var originalSetter = overwrittenInterface.GetMethod($"set_{propertyName}");
-            var originalGetter = overwrittenInterface.GetMethod($"get_{propertyName}");
+            var overwrittenInteraceTypeInfo = overwrittenInterface.GetTypeInfo();
+            var originalSetter = overwrittenInteraceTypeInfo.GetMethod($"set_{propertyName}");
+            var originalGetter = overwrittenInteraceTypeInfo.GetMethod($"get_{propertyName}");
 
             typeBuilder.DefineMethodOverride(setterMethod, originalSetter);
             typeBuilder.DefineMethodOverride(getterMethod, originalGetter);

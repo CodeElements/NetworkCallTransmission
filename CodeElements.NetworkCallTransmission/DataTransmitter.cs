@@ -8,7 +8,7 @@ namespace CodeElements.NetworkCallTransmission
     /// </summary>
     /// <param name="data">The data to send.</param>
     /// <returns>Return the task which completes once the package is sent</returns>
-    public delegate Task SendDataDelegate(ResponseData data);
+    public delegate Task SendDataDelegate(ArraySegment<byte> data);
 
     /// <summary>
     ///     Defines an abstract class which received and transmits data from a remote side
@@ -33,7 +33,7 @@ namespace CodeElements.NetworkCallTransmission
         /// <param name="offset">The starting position within the buffer</param>
         public abstract void ReceiveData(byte[] data, int offset);
 
-        protected virtual Task OnSendData(ResponseData data)
+        protected virtual Task OnSendData(ArraySegment<byte> data)
         {
             if (SendData == null)
                 throw new InvalidOperationException(

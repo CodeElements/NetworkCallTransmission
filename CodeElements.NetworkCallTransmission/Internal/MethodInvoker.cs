@@ -20,7 +20,7 @@ namespace CodeElements.NetworkCallTransmission.Internal
             _delegate = BuildDelegate(methodInfo);
 
             if (ReturnsResult)
-                TaskReturnPropertyInfo = methodInfo.ReturnType.GetProperty("Result");
+                TaskReturnPropertyInfo = methodInfo.ReturnType.GetTypeInfo().GetProperty("Result");
         }
 
         public Type ReturnType { get; }
@@ -47,7 +47,8 @@ namespace CodeElements.NetworkCallTransmission.Internal
                 argumentExpressions.Add(Expression.Convert(Expression.ArrayIndex(argumentsExpression, Expression.Constant(i)), parameterInfo.ParameterType));
             }
 
-            var callExpression = Expression.Call(Expression.Convert(instanceExpression, methodInfo.ReflectedType), methodInfo, argumentExpressions);
+            var callExpression = Expression.Call(Expression.Convert(instanceExpression, methodInfo.DeclaringType),
+                methodInfo, argumentExpressions);
             return
                 Expression.Lambda<ReturnValueDelegate>(Expression.Convert(callExpression, typeof(Task)),
                     instanceExpression, argumentsExpression).Compile();

@@ -1,4 +1,5 @@
 using System;
+using System.Reflection;
 using CodeElements.NetworkCallTransmission.Extensions;
 
 namespace CodeElements.NetworkCallTransmission.Internal
@@ -7,14 +8,14 @@ namespace CodeElements.NetworkCallTransmission.Internal
     {
         public EventSubscriber(object eventProvider, Type type, uint sessionId)
         {
-            var events = type.GetEvents();
+            var events = type.GetTypeInfo().GetEvents();
             AvailableEvents = new EventSubscription[events.Length];
             for (var i = 0; i < events.Length; i++)
             {
                 var eventInfo = events[i];
 
                 var eventHandlerType = eventInfo.EventHandlerType;
-                if (!(eventHandlerType.IsGenericType &&
+                if (!(eventHandlerType.GetTypeInfo().IsGenericType &&
                       (eventHandlerType.GetGenericTypeDefinition() == typeof(TransmittedEventHandler<>) ||
                        eventHandlerType.GetGenericTypeDefinition() == typeof(TransmittedEventHandler<,>))))
                     throw new ArgumentException("All events must be of type TransmittedEventHandler<> or TransmittedEventHandler<,>",

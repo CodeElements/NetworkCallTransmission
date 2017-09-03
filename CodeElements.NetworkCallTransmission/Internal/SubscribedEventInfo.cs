@@ -12,7 +12,7 @@ namespace CodeElements.NetworkCallTransmission.Internal
             Triggers = new List<IEventTrigger>();
             TriggersLock = new object();
 
-            var genericArguments = eventInfo.EventHandlerType.GetGenericArguments();
+            var genericArguments = eventInfo.EventHandlerType.GenericTypeArguments;
             EventHandlerTransmissionInfoType = genericArguments[0];
 
             if (genericArguments.Length == 2)

@@ -27,7 +27,7 @@ namespace CodeElements.NetworkCallTransmission
         /// <returns>Return the thread-safe cache instance</returns>
         public static ExecuterInterfaceCache Build<TInterface>()
         {
-            var interfaceType = typeof(TInterface);
+            var interfaceType = typeof(TInterface).GetTypeInfo();
             var members = interfaceType.GetMembers();
             if (members.Any(x => x.MemberType != MemberTypes.Method))
                 throw new ArgumentException("The interface must only provide methods.", nameof(TInterface));
@@ -42,9 +42,9 @@ namespace CodeElements.NetworkCallTransmission
                 Type actualReturnType;
                 if (methodInfo.ReturnType == typeof(Task))
                     actualReturnType = null;
-                else if (methodInfo.ReturnType.IsGenericType &&
+                else if (methodInfo.ReturnType.GetTypeInfo().IsGenericType &&
                          methodInfo.ReturnType.GetGenericTypeDefinition() == typeof(Task<>))
-                    actualReturnType = methodInfo.ReturnType.GetGenericArguments()[0];
+                    actualReturnType = methodInfo.ReturnType.GenericTypeArguments[0];
                 else
                     throw new ArgumentException("Only tasks are supported as return type.", methodInfo.ToString());
 

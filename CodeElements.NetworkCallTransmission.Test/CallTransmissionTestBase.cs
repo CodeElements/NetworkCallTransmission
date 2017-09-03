@@ -18,10 +18,10 @@ namespace CodeElements.NetworkCallTransmission.Test
             CallTransmissionExecuter = new CallTransmissionExecuter<TInterface>(implementation);
         }
 
-        protected virtual async Task SendData(ResponseData data)
+        protected virtual async Task SendData(ArraySegment<byte> data)
         {
-            var result = await CallTransmissionExecuter.ReceiveData(data.Data, 0);
-            CallTransmission.ReceiveData(result.Data, 0);
+            var result = await CallTransmissionExecuter.ReceiveData(data.Array, 0);
+            CallTransmission.ReceiveData(result.Array, 0);
         }
     }
 }

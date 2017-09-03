@@ -182,7 +182,7 @@ namespace CodeElements.NetworkCallTransmission
                 Buffer.BlockCopy(BitConverter.GetBytes(eventId), 0, package, CustomOffset + 3 + index * 8, 8);
             }
 
-            OnSendData(new ResponseData(package));
+            OnSendData(new ArraySegment<byte>(package));
         }
     }
 }

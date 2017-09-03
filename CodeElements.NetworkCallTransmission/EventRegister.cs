@@ -2,6 +2,7 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
 using CodeElements.NetworkCallTransmission.Internal;
@@ -46,7 +47,7 @@ namespace CodeElements.NetworkCallTransmission
         /// <param name="eventProvider">The instance of <see cref="TEventInterface"/> which calls the events</param>
         public void RegisterEvents<TEventInterface>(TEventInterface eventProvider) where TEventInterface : class
         {
-            var interfaceType = typeof(TEventInterface);
+            var interfaceType = typeof(TEventInterface).GetTypeInfo();
             if (!interfaceType.IsInterface)
                 throw new ArgumentException("TEventInterface must be an interface", nameof(TEventInterface));
 

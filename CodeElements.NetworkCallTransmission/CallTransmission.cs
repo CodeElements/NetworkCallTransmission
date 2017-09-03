@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.Diagnostics.Contracts;
 using System.Linq;
 using System.Reflection;
 using System.Security.Cryptography;
@@ -37,7 +36,8 @@ namespace CodeElements.NetworkCallTransmission
         /// </summary>
         public CallTransmission()
         {
-            if (!typeof(TInterface).IsInterface)
+            var interfaceType = typeof(TInterface).GetTypeInfo();
+            if (!interfaceType.IsInterface)
                 throw new ArgumentException("Only interfaces accepted.", nameof(TInterface));
 
             _lazyInterface =
@@ -45,7 +45,7 @@ namespace CodeElements.NetworkCallTransmission
                     LazyThreadSafetyMode.ExecutionAndPublication);
 
             _md5 = MD5.Create();
-            InitializeInterface(typeof(TInterface));
+            InitializeInterface(interfaceType);
 
             _callbacks = new ConcurrentDictionary<uint, ResultCallback>();
         }
@@ -132,12 +132,12 @@ namespace CodeElements.NetworkCallTransmission
                 return; //could also throw exception here
         }
 
-        private void InitializeInterface(Type interfaceType)
+        private void InitializeInterface(TypeInfo interfaceType)
         {
-            var members = interfaceType.GetMembers();
+            var members = interfaceType.DeclaredMembers;
 
             //check that we only have methods and no properties
-            if (members.Any(x => x.MemberType != MemberTypes.Method))
+            if (interfaceType.DeclaredMembers.Any(x => !(x is MethodInfo)))
                 throw new ArgumentException("The interface must only provide methods.", nameof(interfaceType));
 
             //an interface without any methods is pointless
@@ -152,9 +152,9 @@ namespace CodeElements.NetworkCallTransmission
                 Type actualReturnType;
                 if (methodInfo.ReturnType == typeof(Task))
                     actualReturnType = null;
-                else if (methodInfo.ReturnType.IsGenericType &&
+                else if (methodInfo.ReturnType.GetTypeInfo().IsGenericType &&
                          methodInfo.ReturnType.GetGenericTypeDefinition() == typeof(Task<>))
-                    actualReturnType = methodInfo.ReturnType.GetGenericArguments()[0];
+                    actualReturnType = methodInfo.ReturnType.GenericTypeArguments[0];
                 else
                     throw new ArgumentException("Only tasks are supported as return type.", methodInfo.ToString());
 
@@ -168,8 +168,10 @@ namespace CodeElements.NetworkCallTransmission
 
         private async Task<object> SendMethodCall(MethodCache methodCache, object[] parameters)
         {
-            Contract.Ensures(methodCache != null);
-            Contract.Ensures(parameters != null);
+            if (methodCache == null)
+                throw new ArgumentException("The parameter cannot be null.", nameof(methodCache));
+            if (methodCache == null)
+                throw new ArgumentException("The parameter cannot be null.", nameof(parameters));
 
             //PROTOCOL
             //CALL:
@@ -214,7 +216,7 @@ namespace CodeElements.NetworkCallTransmission
 
             _callbacks.TryAdd(callbackId, callback); //impossible that this goes wrong
 
-            OnSendData(new ResponseData(buffer, bufferOffset)).Forget(); //no need to await that
+            OnSendData(new ArraySegment<byte>(buffer, 0, bufferOffset)).Forget(); //no need to await that
 
             using (callback)
             {
@@ -232,7 +234,9 @@ namespace CodeElements.NetworkCallTransmission
                         return ZeroFormatterSerializer.NonGeneric.Deserialize(methodCache.ReturnType, callback.Data,
                             callback.Offset);
                     case CallTransmissionResponseType.Exception:
-                        throw ExceptionSerializer.Deserialize(callback.Data, callback.Offset);
+                        var up = ZeroFormatterSerializer.Deserialize<IExceptionWrapper>(callback.Data, callback.Offset)
+                            .GetException();
+                        throw up;
                     case CallTransmissionResponseType.MethodNotImplemented:
                         throw new NotImplementedException("The remote method is not implemented.");
                     default:

@@ -43,7 +43,7 @@ namespace CodeElements.NetworkCallTransmission.Proxy
             il.Emit(OpCodes.Ldstr, "The event id was not found.");
 
             il.Emit(OpCodes.Newobj,
-                typeof(ArgumentException).GetConstructors()
+                typeof(ArgumentException).GetTypeInfo().GetConstructors()
                     .First(x => x.GetParameters().Length == 1 && x.GetParameters()[0].ParameterType == typeof(string)));
             il.Emit(OpCodes.Throw);
 
@@ -65,36 +65,24 @@ namespace CodeElements.NetworkCallTransmission.Proxy
                 il.MarkLabel(ifNotNullLabel);
 
                 var eventInfo = events[i];
-                var genericArguments = eventInfo.EventHandlerType.GetGenericArguments();
+                var genericArguments = eventInfo.EventHandlerType.GenericTypeArguments;
 
                 il.Emit(OpCodes.Ldarg_2);
-                il.Emit(genericArguments[0].IsValueType ? OpCodes.Unbox_Any : OpCodes.Castclass, genericArguments[0]);
+                il.Emit(genericArguments[0].GetTypeInfo().IsValueType ? OpCodes.Unbox_Any : OpCodes.Castclass, genericArguments[0]);
 
                 if (genericArguments.Length == 2)
                 {
                     il.Emit(OpCodes.Ldarg_3);
-                    il.Emit(genericArguments[1].IsValueType ? OpCodes.Unbox_Any : OpCodes.Castclass,
+                    il.Emit(genericArguments[1].GetTypeInfo().IsValueType ? OpCodes.Unbox_Any : OpCodes.Castclass,
                         genericArguments[1]);
                 }
 
-                il.Emit(OpCodes.Callvirt, eventInfo.EventHandlerType.GetMethod(nameof(TransmittedEventHandler<TransmissionInfo>.Invoke)));
+                il.Emit(OpCodes.Callvirt, eventInfo.EventHandlerType.GetTypeInfo().GetMethod(nameof(TransmittedEventHandler<TransmissionInfo>.Invoke)));
                 il.Emit(OpCodes.Ret);
             }
 
             typeBuilder.DefineMethodOverride(methodBuilder,
-                typeof(IEventInterceptorProxy).GetMethod(nameof(IEventInterceptorProxy.TriggerEvent)));
-        }
-
-        private TransmittedEventHandler<string, int> _asd;
-
-        public void Test(int eventId, object transmissionInfo, object parameter)
-        {
-            switch (eventId)
-            {
-                case 1:
-                    _asd.Invoke((string) transmissionInfo, (int)parameter);
-                    break;
-            }
+                typeof(IEventInterceptorProxy).GetTypeInfo().GetMethod(nameof(IEventInterceptorProxy.TriggerEvent)));
         }
     }
 }

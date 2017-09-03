@@ -22,11 +22,11 @@ namespace CodeElements.NetworkCallTransmission.Test
         private readonly CallTransmissionExecuter<IBasicTestInterface> _executer;
         private readonly CallTransmission<IBasicTestInterface> _transmission;
 
-        private async Task SendData(ResponseData responseData)
+        private async Task SendData(ArraySegment<byte> responseData)
         {
             var buffer = responseData;
-            var result = await _executer.ReceiveData(buffer.Data, 0);
-            _transmission.ReceiveData(result.Data, 0);
+            var result = await _executer.ReceiveData(buffer.Array, 0);
+            _transmission.ReceiveData(result.Array, 0);
         }
 
         [Fact]

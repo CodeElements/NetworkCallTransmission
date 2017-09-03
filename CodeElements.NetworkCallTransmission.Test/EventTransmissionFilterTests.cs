@@ -31,7 +31,7 @@ namespace CodeElements.NetworkCallTransmission.Test
             Assert.True(raised1);
 
             events.Events.TestEvent2 += (transInfo, args) => raised2 = true;
-            _basicTestEventsImpl.TriggerTestEvent2("324asd", "test");
+            _basicTestEventsImpl.TriggerTestEvent2("test", "324asd");
             Assert.False(raised2);
 
             _basicTestEventsImpl.TriggerTestEvent2("asd", "a3");

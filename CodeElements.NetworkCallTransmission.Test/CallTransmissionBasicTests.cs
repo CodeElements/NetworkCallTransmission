@@ -12,7 +12,7 @@ namespace CodeElements.NetworkCallTransmission.Test
         {
         }
 
-        protected override async Task SendData(ResponseData data)
+        protected override async Task SendData(ArraySegment<byte> data)
         {
             await Task.Delay(20);
             await base.SendData(data);

@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Net;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -22,7 +21,7 @@ namespace CodeElements.NetworkCallTransmission.Test
         public async Task TestWebException()
         {
             var exception =
-                await Assert.ThrowsAsync<WebException>(async () => await CallTransmission.Interface.Test2());
+                await Assert.ThrowsAsync<InvalidCastException>(async () => await CallTransmission.Interface.Test2());
             Assert.Equal("234adasd", exception.Message);
             Assert.NotNull(exception.StackTrace);
         }
@@ -38,11 +37,11 @@ namespace CodeElements.NetworkCallTransmission.Test
         }
 
         [Fact]
-        public async Task TestRemoteCallException()
+        public async Task TestAggregateException()
         {
             var exception =
-                await Assert.ThrowsAsync<RemoteCallException>(async () => await CallTransmission.Interface.Test4(1));
-            Assert.Equal(typeof(AggregateException).FullName, exception.ExceptionType);
+                await Assert.ThrowsAsync<AggregateException>(async () => await CallTransmission.Interface.Test4(1));
+            Assert.IsType<ObjectDisposedException>(exception.InnerExceptions[0]);
             Assert.NotNull(exception.StackTrace);
         }
     }
@@ -56,7 +55,7 @@ namespace CodeElements.NetworkCallTransmission.Test
 
         public Task<string> Test2()
         {
-            throw new WebException("234adasd", WebExceptionStatus.ConnectFailure);
+            throw new InvalidCastException("234adasd", 123);
         }
 
         public Task<bool> Test3(string asd)
@@ -66,7 +65,7 @@ namespace CodeElements.NetworkCallTransmission.Test
 
         public Task Test4(byte asd)
         {
-            throw new RemoteCallException(new AggregateException());
+            throw new AggregateException(new ObjectDisposedException("SslStream"));
         }
     }
 
