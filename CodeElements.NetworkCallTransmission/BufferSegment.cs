@@ -10,18 +10,36 @@ namespace CodeElements.NetworkCallTransmission
     {
         private readonly BufferManager _bufferManager;
 
-        internal BufferSegment(byte[] buffer, int offset, int length)
+        /// <summary>
+        ///     Initialize a new instance of <see cref="BufferSegment" /> with a buffer
+        /// </summary>
+        /// <param name="buffer">The buffer that contains the segment</param>
+        /// <param name="offset">The offset in the buffer at which the segment begins</param>
+        /// <param name="length">The length of the segment in the buffer</param>
+        public BufferSegment(byte[] buffer, int offset, int length)
         {
             Buffer = buffer;
             Offset = offset;
             Length = length;
         }
 
-        internal BufferSegment(byte[] buffer) : this(buffer, 0, buffer.Length)
+        /// <summary>
+        ///     Initialize a new instance of <see cref="BufferSegment" /> with a buffer that is the segment
+        /// </summary>
+        /// <param name="buffer">The buffer that is the segment</param>
+        public BufferSegment(byte[] buffer) : this(buffer, 0, buffer.Length)
         {
         }
 
-        internal BufferSegment(byte[] buffer, int offset, int length, BufferManager bufferManager) : this(buffer, offset,
+        /// <summary>
+        ///     Initialize a new instance of <see cref="BufferSegment" /> with a buffer and the buffer manager which provided the
+        ///     buffer
+        /// </summary>
+        /// <param name="buffer">The buffer that contains the segment</param>
+        /// <param name="offset">The offset in the buffer at which the segment begins</param>
+        /// <param name="length">The length of the segment in the buffer</param>
+        /// <param name="bufferManager">The buffer manager which is the origin of the buffer</param>
+        public BufferSegment(byte[] buffer, int offset, int length, BufferManager bufferManager) : this(buffer, offset,
             length)
         {
             _bufferManager = bufferManager;
@@ -30,7 +48,7 @@ namespace CodeElements.NetworkCallTransmission
         /// <summary>
         ///     The buffer that should be sent
         /// </summary>
-        public byte[] Buffer { get; }
+        public byte[] Buffer { get; private set; }
 
         /// <summary>
         ///     The offset in the <see cref="Buffer" />
@@ -49,6 +67,7 @@ namespace CodeElements.NetworkCallTransmission
         public void Dispose()
         {
             _bufferManager?.ReturnBuffer(Buffer);
+            Buffer = null;
         }
     }
 }
