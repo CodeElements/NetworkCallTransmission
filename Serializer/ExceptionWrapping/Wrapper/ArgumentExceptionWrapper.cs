@@ -1,16 +1,26 @@
 using System;
+#if ZEROFORMATTER
 using ZeroFormatter;
 
-namespace CodeElements.NetworkCallTransmission.ZeroFormatter.Exceptions.Wrapper
+#endif
+
+namespace CodeElements.NetworkCallTransmission.ExceptionWrapping.Wrapper
 {
+#if ZEROFORMATTER
     [ZeroFormattable]
+#endif
+#if NETSERIALIZER
+    [Serializable]
+#endif
     public class ArgumentExceptionWrapper : GenericExceptionInfo<ArgumentException>, IExceptionWrapper
     {
+#if ZEROFORMATTER
         [IgnoreFormat]
         public ExceptionType Type { get; } = ExceptionType.ArgumentException;
 
-        [Index(NextIndex)]
-        public virtual string ParamName { get; set; }
+        [Index(NextIndex)] virtual
+#endif
+        public string ParamName { get; set; }
 
         protected override void ApplyProperties(ArgumentException exception)
         {

@@ -1,13 +1,13 @@
 using System;
 
-namespace CodeElements.NetworkCallTransmission.ZeroFormatter.Exceptions
+namespace CodeElements.NetworkCallTransmission.ExceptionWrapping
 {
     public abstract class GenericExceptionInfo<TException> : ExceptionInfo where TException : Exception
     {
         protected override void ApplyProperties(Exception exception)
         {
             base.ApplyProperties(exception);
-            ApplyProperties((TException)exception);
+            ApplyProperties((TException) exception);
         }
 
         protected abstract void ApplyProperties(TException exception);

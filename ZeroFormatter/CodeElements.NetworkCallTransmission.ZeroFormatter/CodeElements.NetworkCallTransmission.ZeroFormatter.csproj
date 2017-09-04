@@ -2,6 +2,7 @@
 
   <PropertyGroup>
     <TargetFramework>netstandard1.6</TargetFramework>
+    <DefineConstants>ZEROFORMATTER</DefineConstants>
   </PropertyGroup>
 
   <ItemGroup>
@@ -9,5 +10,7 @@
     <ProjectReference Include="..\ZeroFormatter\src\ZeroFormatter.Interfaces.NETCore\ZeroFormatter.Interfaces.NETCore.csproj" />
     <ProjectReference Include="..\ZeroFormatter\src\ZeroFormatter.NETCore\ZeroFormatter.NETCore.csproj" />
   </ItemGroup>
+
+  <Import Project="..\..\Serializer\ExceptionWrapping\ExceptionWrapping.projitems" Label="Shared" />
 
 </Project>

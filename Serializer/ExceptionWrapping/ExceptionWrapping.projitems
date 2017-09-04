@@ -1,0 +1,23 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <MSBuildAllProjects>$(MSBuildAllProjects);$(MSBuildThisFileFullPath)</MSBuildAllProjects>
+    <HasSharedItems>true</HasSharedItems>
+    <SharedGUID>09248abd-c902-42c5-b1aa-a93504f60f73</SharedGUID>
+  </PropertyGroup>
+  <PropertyGroup Label="Configuration">
+    <Import_RootNamespace>ExceptionWrapping</Import_RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="$(MSBuildThisFileDirectory)ExceptionFactory.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)ExceptionInfo.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)ExceptionType.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)GenericExceptionInfo.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)IExceptionWrapper.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Wrapper\AggregateExceptionWrapper.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Wrapper\ArgumentExceptionWrapper.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Wrapper\ExceptionWrapper.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Wrapper\NetworkCallExceptionWrapper.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Wrapper\ObjectDisposedExceptionWrapper.cs" />
+  </ItemGroup>
+</Project>

@@ -1,5 +1,5 @@
 ﻿using System;
-using CodeElements.NetworkCallTransmission.ZeroFormatter.Exceptions;
+using CodeElements.NetworkCallTransmission.ExceptionWrapping;
 using ZeroFormatter;
 
 namespace CodeElements.NetworkCallTransmission.ZeroFormatter

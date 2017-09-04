@@ -2,11 +2,14 @@
 
   <PropertyGroup>
     <TargetFramework>netstandard1.6</TargetFramework>
+    <DefineConstants>NETSERIALIZER</DefineConstants>
   </PropertyGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\..\CodeElements.NetworkCallTransmission\CodeElements.NetworkCallTransmission.csproj" />
     <ProjectReference Include="..\NetSerializer\NetSerializer\NetSerializer.csproj" />
   </ItemGroup>
+
+  <Import Project="..\..\Serializer\ExceptionWrapping\ExceptionWrapping.projitems" Label="Shared" />
 
 </Project>

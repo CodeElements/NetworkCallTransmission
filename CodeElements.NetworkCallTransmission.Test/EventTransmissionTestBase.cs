@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Threading.Tasks;
-using CodeElements.NetworkCallTransmission.ZeroFormatter;
 
 namespace CodeElements.NetworkCallTransmission.Test
 {
@@ -11,7 +10,7 @@ namespace CodeElements.NetworkCallTransmission.Test
 
         protected EventTransmissionTestBase()
         {
-            EventRegister = new EventRegister(ZeroFormatterNetworkSerializer.Instance);
+            EventRegister = new EventRegister(Properties.Serializer);
         }
 
         protected void ConnectTestEventSubscriber(ITestEventSubscriber testEventSubscriber)
@@ -37,7 +36,7 @@ namespace CodeElements.NetworkCallTransmission.Test
     {
         public DefaultEventSubscriber()
         {
-            EventManager = new EventManager(ZeroFormatterNetworkSerializer.Instance) {SendData = SendDataHandler};
+            EventManager = new EventManager(Properties.Serializer) {SendData = SendDataHandler};
         }
 
         public event EventHandler<ArraySegment<byte>> SendData;

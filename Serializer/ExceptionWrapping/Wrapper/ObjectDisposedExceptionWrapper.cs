@@ -1,16 +1,27 @@
 ﻿using System;
+#if ZEROFORMATTER
 using ZeroFormatter;
 
-namespace CodeElements.NetworkCallTransmission.ZeroFormatter.Exceptions.Wrapper
+#endif
+
+
+namespace CodeElements.NetworkCallTransmission.ExceptionWrapping.Wrapper
 {
+#if ZEROFORMATTER
     [ZeroFormattable]
+#endif
+#if NETSERIALIZER
+    [Serializable]
+#endif
     public class ObjectDisposedExceptionWrapper : GenericExceptionInfo<ObjectDisposedException>, IExceptionWrapper
     {
+#if ZEROFORMATTER
         [IgnoreFormat]
         public ExceptionType Type { get; } = ExceptionType.ObjectDisposedException;
 
-        [Index(NextIndex)]
-        public virtual string ObjectName { get; set; }
+        [Index(NextIndex)] virtual
+#endif
+        public string ObjectName { get; set; }
 
         protected override void ApplyProperties(ObjectDisposedException exception)
         {

@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Threading.Tasks;
-using CodeElements.NetworkCallTransmission.ZeroFormatter;
 
 namespace CodeElements.NetworkCallTransmission.Test
 {
@@ -11,12 +10,12 @@ namespace CodeElements.NetworkCallTransmission.Test
 
         protected CallTransmissionTestBase(TInterface implementation)
         {
-            CallTransmission = new CallTransmission<TInterface>(ZeroFormatterNetworkSerializer.Instance)
+            CallTransmission = new CallTransmission<TInterface>(Properties.Serializer)
             {
                 SendData = SendData,
                 WaitTimeout = TimeSpan.FromSeconds(5)
             };
-            CallTransmissionExecuter = new CallTransmissionExecuter<TInterface>(implementation, ZeroFormatterNetworkSerializer.Instance);
+            CallTransmissionExecuter = new CallTransmissionExecuter<TInterface>(implementation, Properties.Serializer);
         }
 
         protected virtual async Task SendData(ArraySegment<byte> data)

@@ -2,10 +2,19 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Reflection;
-using CodeElements.NetworkCallTransmission.ZeroFormatter.Exceptions.Wrapper;
+using CodeElements.NetworkCallTransmission.ExceptionWrapping.Wrapper;
+
+#if ZEROFORMATTER
 using ZeroFormatter;
 
-namespace CodeElements.NetworkCallTransmission.ZeroFormatter.Exceptions
+#endif
+
+#if NETSERIALIZER
+using System.IO;
+
+#endif
+
+namespace CodeElements.NetworkCallTransmission.ExceptionWrapping
 {
     internal static class ExceptionFactory
     {
@@ -36,7 +45,7 @@ namespace CodeElements.NetworkCallTransmission.ZeroFormatter.Exceptions
             var exceptionType = exception.GetType();
             var exceptionInfo = ExceptionToExceptionInfo.TryGetValue(exceptionType, out var wrapperInitalizer)
                 ? wrapperInitalizer()
-                : new RemoteCallExceptionWrapper();
+                : new NetworkCallExceptionWrapper();
 
             exceptionInfo.ExportProperties(exception);
             return exceptionInfo;
@@ -53,9 +62,21 @@ namespace CodeElements.NetworkCallTransmission.ZeroFormatter.Exceptions
             exceptionInfo.HResult = exception.HResult;
             exceptionInfo.Source = exception.Source;
 
+#if ZEROFORMATTER
             if (serializeInnerException && exception.InnerException != null)
                 exceptionInfo.InnerException =
                     ZeroFormatterSerializer.Serialize(PackException(exception.InnerException));
+#endif
+#if NETSERIALIZER
+            if(serializeInnerException && exception.InnerException != null)
+                using (var memoryStream = new MemoryStream())
+                {
+                    ExceptionInfo.ExceptionWrapperSerializer.Serialize(memoryStream,
+                        PackException(exception.InnerException));
+                    exceptionInfo.InnerException = memoryStream.ToArray();
+                }
+#endif
+
         }
 
         public static void ApplyExceptionInformation(Exception exception, ExceptionInfo exceptionInfo)

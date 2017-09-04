@@ -1,18 +1,25 @@
 ﻿using System;
-using CodeElements.NetworkCallTransmission.ZeroFormatter.Exceptions.Wrapper;
+using CodeElements.NetworkCallTransmission.ExceptionWrapping.Wrapper;
+#if ZEROFORMATTER
 using ZeroFormatter;
 
-namespace CodeElements.NetworkCallTransmission.ZeroFormatter.Exceptions
+#endif
+
+namespace CodeElements.NetworkCallTransmission.ExceptionWrapping
 {
+#if ZEROFORMATTER
     [Union(new[]
     {
         typeof(ArgumentExceptionWrapper), typeof(ExceptionWrapper), typeof(ObjectDisposedExceptionWrapper),
-        typeof(RemoteCallExceptionWrapper), typeof(AggregateExceptionWrapper)
+        typeof(NetworkCallExceptionWrapper), typeof(AggregateExceptionWrapper)
     }, typeof(ExceptionWrapper))]
+#endif
     public interface IExceptionWrapper
     {
+#if ZEROFORMATTER
         [UnionKey]
         ExceptionType Type { get; }
+#endif
 
         Exception GetException();
         void ExportProperties(Exception exception);

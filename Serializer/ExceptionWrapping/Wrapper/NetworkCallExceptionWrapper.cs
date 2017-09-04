@@ -1,17 +1,27 @@
 using System;
 using System.Reflection;
+#if ZEROFORMATTER
 using ZeroFormatter;
 
-namespace CodeElements.NetworkCallTransmission.ZeroFormatter.Exceptions.Wrapper
+#endif
+
+namespace CodeElements.NetworkCallTransmission.ExceptionWrapping.Wrapper
 {
+#if ZEROFORMATTER
     [ZeroFormattable]
-    public class RemoteCallExceptionWrapper : ExceptionInfo, IExceptionWrapper
+#endif
+#if NETSERIALIZER
+    [Serializable]
+#endif
+    public class NetworkCallExceptionWrapper : ExceptionInfo, IExceptionWrapper
     {
+#if ZEROFORMATTER
         [IgnoreFormat]
         public ExceptionType Type { get; } = ExceptionType.NetworkCallException;
 
-        [Index(NextIndex)]
-        public virtual string ExceptionClassName { get; set; }
+        [Index(NextIndex)] virtual
+#endif
+        public string ExceptionClassName { get; set; }
 
         public override void ExportProperties(Exception exception)
         {

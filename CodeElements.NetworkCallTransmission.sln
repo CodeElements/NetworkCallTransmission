@@ -23,7 +23,12 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ZeroFormatter.NETCore", "Ze
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ZeroFormatter.Interfaces.NETCore", "ZeroFormatter\ZeroFormatter\src\ZeroFormatter.Interfaces.NETCore\ZeroFormatter.Interfaces.NETCore.csproj", "{6E9D7B52-D6BA-45F9-A7EA-F0ACC9D551F6}"
 EndProject
+Project("{D954291E-2A0B-460D-934E-DC6B0785DB48}") = "ExceptionWrapping", "Serializer\ExceptionWrapping\ExceptionWrapping.shproj", "{09248ABD-C902-42C5-B1AA-A93504F60F73}"
+EndProject
 Global
+	GlobalSection(SharedMSBuildProjectFiles) = preSolution
+		Serializer\ExceptionWrapping\ExceptionWrapping.projitems*{09248abd-c902-42c5-b1aa-a93504f60f73}*SharedItemsImports = 13
+	EndGlobalSection
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
 		Release|Any CPU = Release|Any CPU
@@ -69,6 +74,7 @@ Global
 		{D177EE57-84BF-4F59-B728-DC3C86350204} = {2B1207E6-F16A-434A-981F-44CF2836D68F}
 		{6425EC96-962D-486F-8782-834C64AD7DE0} = {2B1207E6-F16A-434A-981F-44CF2836D68F}
 		{6E9D7B52-D6BA-45F9-A7EA-F0ACC9D551F6} = {2B1207E6-F16A-434A-981F-44CF2836D68F}
+		{09248ABD-C902-42C5-B1AA-A93504F60F73} = {918EBF0A-F980-4C01-A4D4-28DE69633CCB}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {2992ACA4-3ED3-45C1-922E-619118099E5D}

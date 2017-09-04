@@ -1,5 +1,6 @@
-namespace CodeElements.NetworkCallTransmission.ZeroFormatter.Exceptions
+namespace CodeElements.NetworkCallTransmission.ExceptionWrapping
 {
+#if ZEROFORMATTER
     public enum ExceptionType
     {
         Exception = 1,
@@ -8,4 +9,5 @@ namespace CodeElements.NetworkCallTransmission.ZeroFormatter.Exceptions
         ObjectDisposedException = 4,
         AggregateException = 5
     }
+#endif
 }

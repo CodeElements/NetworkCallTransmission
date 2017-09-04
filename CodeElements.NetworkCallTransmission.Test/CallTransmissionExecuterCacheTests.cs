@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Threading.Tasks;
-using CodeElements.NetworkCallTransmission.ZeroFormatter;
 using Xunit;
 
 namespace CodeElements.NetworkCallTransmission.Test
@@ -10,12 +9,12 @@ namespace CodeElements.NetworkCallTransmission.Test
         public CallTransmissionExecuterCacheTests()
         {
             var exe1 = new CallTransmissionExecuter<IBasicTestInterface>(new BasicTestInterfaceImpl(),
-                ZeroFormatterNetworkSerializer.Instance);
+                Properties.Serializer);
             var cache = exe1.Cache;
             _executer = new CallTransmissionExecuter<IBasicTestInterface>(new BasicTestInterfaceImpl(),
-                ZeroFormatterNetworkSerializer.Instance, cache);
+                Properties.Serializer, cache);
 
-            _transmission = new CallTransmission<IBasicTestInterface>(ZeroFormatterNetworkSerializer.Instance)
+            _transmission = new CallTransmission<IBasicTestInterface>(Properties.Serializer)
             {
                 SendData = SendData,
                 WaitTimeout = TimeSpan.FromSeconds(5)
