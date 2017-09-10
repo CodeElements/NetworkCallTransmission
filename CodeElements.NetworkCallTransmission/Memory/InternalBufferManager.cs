@@ -236,8 +236,9 @@ namespace CodeElements.NetworkCallTransmission.Memory
                     returnValue = new byte[bufferSize];
                 }
 
+#if DEBUG
                 _buffersPooled.TryRemove(returnValue.GetHashCode(), out var _);
-
+#endif //DEBUG
                 return returnValue;
             }
 
