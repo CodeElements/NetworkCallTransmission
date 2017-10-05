@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Linq;
 using System.Reflection;
+using System.Text;
 
 namespace CodeElements.NetworkCallTransmission.Extensions
 {
@@ -17,8 +18,15 @@ namespace CodeElements.NetworkCallTransmission.Extensions
 
         public static ulong GetEventId(this EventInfo eventInfo, Type interfaceType, uint sessionId)
         {
-            return (MurmurHash.Hash(eventInfo.Name + eventInfo.EventHandlerType.FullName + interfaceType.Name) << 32) |
-                   sessionId;
+	        var stringBuilder = new StringBuilder();
+	        stringBuilder.Append(eventInfo.Name);
+	        stringBuilder.Append(eventInfo.EventHandlerType.Name);
+	        stringBuilder.Append(eventInfo.EventHandlerType.Namespace);
+
+	        foreach (var genericTypeArgument in eventInfo.EventHandlerType.GenericTypeArguments)
+		        stringBuilder.Append(genericTypeArgument);
+	        stringBuilder.Append(interfaceType.Name);
+	        return (MurmurHash.Hash(stringBuilder.ToString()) << 32) | sessionId;
         }
 
         private static string GetInvariantFullName(Type type)
