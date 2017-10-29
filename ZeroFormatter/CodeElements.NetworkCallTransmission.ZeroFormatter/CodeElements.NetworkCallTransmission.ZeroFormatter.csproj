@@ -11,6 +11,10 @@
     <ProjectReference Include="..\ZeroFormatter\src\ZeroFormatter.NETCore\ZeroFormatter.NETCore.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <PackageReference Update="NETStandard.Library" Version="2.0.1" />
+  </ItemGroup>
+
   <Import Project="..\..\Serializer\ExceptionWrapping\ExceptionWrapping.projitems" Label="Shared" />
 
 </Project>
