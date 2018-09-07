@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Buffers;
+using CodeElements.NetworkCallTransmission.ExceptionWrapping;
 using NetSerializer;
 
 namespace CodeElements.NetworkCall.NetSerializer
@@ -13,23 +14,29 @@ namespace CodeElements.NetworkCall.NetSerializer
             _serializerCache = new SerializerCache();
         }
 
-        public object Deserialize(Type type, byte[] data, int offset)
+        public object Deserialize(Type type, byte[] data, int offset) =>
+            _serializerCache.GetSerializer(type).Deserialize(data, offset);
+
+        public int Serialize(Type type, ref byte[] buffer, int offset, object value, ArrayPool<byte> pool) =>
+            Serialize(_serializerCache.GetSerializer(type), ref buffer, offset, value, pool);
+
+        public Exception DeserializeException(byte[] data, int offset) =>
+            ExceptionInfo.ExceptionWrapperSerializer.Deserialize<ExceptionInfo>(data, offset).GetException();
+
+        public int SerializeException(ref byte[] buffer, int offset, Exception exception, ArrayPool<byte> pool)
         {
-            return _serializerCache.GetSerializer(type).Deserialize(data, offset);
+            var exceptionInfo = ExceptionFactory.PackException(exception);
+            return Serialize(ExceptionInfo.ExceptionWrapperSerializer, ref buffer, offset, exceptionInfo, pool);
         }
 
-        public int Serialize(Type type, ref byte[] buffer, int offset, object value, ArrayPool<byte> pool)
+        public int Serialize(Serializer serializer, ref byte[] buffer, int offset, object value, ArrayPool<byte> pool)
         {
             var poolStream = new PooledMemoryStream(buffer, offset, pool); //do not dispose
-            _serializerCache.GetSerializer(type).Serialize(poolStream, value);
+            serializer.Serialize(poolStream, value);
 
             var newBuffer = poolStream.ToUnsafeArraySegment();
             buffer = newBuffer.Array;
             return newBuffer.Count;
         }
-
-        public Exception DeserializeException(byte[] data, int offset) => throw new NotImplementedException();
-
-        public int SerializeException(ref byte[] buffer, int offset, Exception exception, ArrayPool<byte> pool) => throw new NotImplementedException();
     }
 }

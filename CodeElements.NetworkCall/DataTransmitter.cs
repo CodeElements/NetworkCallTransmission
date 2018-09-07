@@ -33,16 +33,18 @@ namespace CodeElements.NetworkCall
         /// <param name="offset">The starting position within the buffer</param>
         public abstract void ReceiveData(byte[] data, int offset);
 
-        protected virtual Task OnSendData(BufferSegment data)
+        protected virtual async Task OnSendData(BufferSegment data)
         {
-            if (SendData == null)
+            using (data)
             {
-                data.Dispose();
-                throw new InvalidOperationException(
-                    "The SendData delegate is null. Please initialize this class before using.");
-            }
+                if (SendData == null)
+                {
+                    throw new InvalidOperationException(
+                        "The SendData delegate is null. Please initialize this class before using.");
+                }
 
-            return SendData(data);
+                await SendData(data);
+            }
         }
     }
 }

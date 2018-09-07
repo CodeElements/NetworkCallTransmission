@@ -9,6 +9,7 @@ namespace CodeElements.NetworkCall
     public struct BufferSegment : IDisposable
     {
         private readonly ArrayPool<byte> _arrayPool;
+        private bool _isDisposed;
 
         /// <summary>
         ///     Initialize a new instance of <see cref="BufferSegment" /> with a buffer
@@ -16,7 +17,6 @@ namespace CodeElements.NetworkCall
         /// <param name="buffer">The buffer that contains the segment</param>
         /// <param name="offset">The offset in the buffer at which the segment begins</param>
         /// <param name="length">The length of the segment in the buffer</param>
-        [Obsolete("Warning")]
         public BufferSegment(byte[] buffer, int offset, int length)
         {
             Buffer = buffer;
@@ -24,6 +24,7 @@ namespace CodeElements.NetworkCall
             Length = length;
 
             _arrayPool = null;
+            _isDisposed = false;
         }
 
         /// <summary>
@@ -69,6 +70,10 @@ namespace CodeElements.NetworkCall
         /// </summary>
         public void Dispose()
         {
+            if (_isDisposed)
+                return;
+
+            _isDisposed = true;
             _arrayPool?.Return(Buffer);
             Buffer = null;
         }
