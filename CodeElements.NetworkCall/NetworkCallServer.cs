@@ -23,7 +23,7 @@ namespace CodeElements.NetworkCall
         {
         }
 
-        public NetworkCallServer(TInterface implementation, INetworkSerializer serializer, NetworkCallServerCache cache )
+        public NetworkCallServer(TInterface implementation, INetworkSerializer serializer, NetworkCallServerCache cache)
         {
             _implementation = implementation;
             _serializer = serializer;
