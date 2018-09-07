@@ -6,7 +6,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\CodeElements.NetworkCallTransmission\CodeElements.NetworkCallTransmission.csproj" />
     <ProjectReference Include="..\NetSerializer\NetSerializer\NetSerializer.csproj" />
   </ItemGroup>
 

@@ -25,6 +25,14 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ZeroFormatter.Interfaces.NE
 EndProject
 Project("{D954291E-2A0B-460D-934E-DC6B0785DB48}") = "ExceptionWrapping", "Serializer\ExceptionWrapping\ExceptionWrapping.shproj", "{09248ABD-C902-42C5-B1AA-A93504F60F73}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CodeElements.NetworkCall", "CodeElements.NetworkCall\CodeElements.NetworkCall.csproj", "{64712B4D-28C2-4946-A075-E50D9A456F8F}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CodeElements.NetworkCall.NetSerializer", "NetSerializer\CodeElements.NetworkCall.NetSerializer\CodeElements.NetworkCall.NetSerializer.csproj", "{78F6B60C-CD51-42E8-BCFB-AA9D091A3758}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CodeElements.NetworkCall.NetSerializer.Test", "NetSerializer\CodeElements.NetworkCall.NetSerializer.Test\CodeElements.NetworkCall.NetSerializer.Test.csproj", "{BD02A879-DE92-4F4E-B9D5-EBCF36ADAD47}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CodeElements.NetworkCall.Test", "CodeElements.NetworkCall.Test\CodeElements.NetworkCall.Test.csproj", "{F8E8FF54-5B24-4C78-8495-C2204EFFBE5C}"
+EndProject
 Global
 	GlobalSection(SharedMSBuildProjectFiles) = preSolution
 		Serializer\ExceptionWrapping\ExceptionWrapping.projitems*{09248abd-c902-42c5-b1aa-a93504f60f73}*SharedItemsImports = 13
@@ -62,6 +70,22 @@ Global
 		{6E9D7B52-D6BA-45F9-A7EA-F0ACC9D551F6}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{6E9D7B52-D6BA-45F9-A7EA-F0ACC9D551F6}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{6E9D7B52-D6BA-45F9-A7EA-F0ACC9D551F6}.Release|Any CPU.Build.0 = Release|Any CPU
+		{64712B4D-28C2-4946-A075-E50D9A456F8F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{64712B4D-28C2-4946-A075-E50D9A456F8F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{64712B4D-28C2-4946-A075-E50D9A456F8F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{64712B4D-28C2-4946-A075-E50D9A456F8F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{78F6B60C-CD51-42E8-BCFB-AA9D091A3758}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{78F6B60C-CD51-42E8-BCFB-AA9D091A3758}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{78F6B60C-CD51-42E8-BCFB-AA9D091A3758}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{78F6B60C-CD51-42E8-BCFB-AA9D091A3758}.Release|Any CPU.Build.0 = Release|Any CPU
+		{BD02A879-DE92-4F4E-B9D5-EBCF36ADAD47}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{BD02A879-DE92-4F4E-B9D5-EBCF36ADAD47}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{BD02A879-DE92-4F4E-B9D5-EBCF36ADAD47}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{BD02A879-DE92-4F4E-B9D5-EBCF36ADAD47}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F8E8FF54-5B24-4C78-8495-C2204EFFBE5C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F8E8FF54-5B24-4C78-8495-C2204EFFBE5C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F8E8FF54-5B24-4C78-8495-C2204EFFBE5C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F8E8FF54-5B24-4C78-8495-C2204EFFBE5C}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -75,6 +99,8 @@ Global
 		{6425EC96-962D-486F-8782-834C64AD7DE0} = {2B1207E6-F16A-434A-981F-44CF2836D68F}
 		{6E9D7B52-D6BA-45F9-A7EA-F0ACC9D551F6} = {2B1207E6-F16A-434A-981F-44CF2836D68F}
 		{09248ABD-C902-42C5-B1AA-A93504F60F73} = {918EBF0A-F980-4C01-A4D4-28DE69633CCB}
+		{78F6B60C-CD51-42E8-BCFB-AA9D091A3758} = {BBCFC1C8-1647-4900-9DDE-9B42C332D87F}
+		{BD02A879-DE92-4F4E-B9D5-EBCF36ADAD47} = {BBCFC1C8-1647-4900-9DDE-9B42C332D87F}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {2992ACA4-3ED3-45C1-922E-619118099E5D}

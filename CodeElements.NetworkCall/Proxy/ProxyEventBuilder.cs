@@ -6,7 +6,7 @@ using System.Threading;
 
 // ReSharper disable PossibleNullReferenceException
 
-namespace CodeElements.NetworkCallTransmission.Proxy
+namespace CodeElements.NetworkCall.Proxy
 {
     internal class ProxyEventBuilder
     {
@@ -144,17 +144,19 @@ namespace CodeElements.NetworkCallTransmission.Proxy
             il.Emit(OpCodes.Ldloc_1);
             il.Emit(OpCodes.Bne_Un_S, loop);
 
-            il.Emit(OpCodes.Ldloc_0); //the current event handler
-
             var endMethod = il.DefineLabel();
             if (remove)
             {
-                il.Emit(OpCodes.Brtrue_S, endMethod); //not null
+                //if the new event handler is null
+                il.Emit(OpCodes.Ldloc_2); //the new event handler
             }
             else
             {
-                il.Emit(OpCodes.Brfalse_S, endMethod); //null
+                //if the previous event handler was null
+                il.Emit(OpCodes.Ldloc_0); //the inital event handler
             }
+
+            il.Emit(OpCodes.Brtrue, endMethod); //null
 
             il.Emit(OpCodes.Ldarg_0);
             il.Emit(OpCodes.Call, _getInterceptor);
