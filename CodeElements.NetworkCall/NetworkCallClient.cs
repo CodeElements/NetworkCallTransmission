@@ -224,7 +224,7 @@ namespace CodeElements.NetworkCall
                 BinaryUtils.WriteUInt32(buffer, CustomOffset + 3 + index * 4, eventId);
             }
 
-            OnSendData(new BufferSegment(buffer, CustomOffset, bufferLength, _pool));
+            OnSendData(new BufferSegment(buffer, CustomOffset, bufferLength, _pool)).Forget();
         }
 
         private Task<object> SendMethodCall(CachedMethod cachedMethod, object[] parameters)

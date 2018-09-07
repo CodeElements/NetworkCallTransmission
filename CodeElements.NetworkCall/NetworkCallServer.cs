@@ -115,7 +115,7 @@ namespace CodeElements.NetworkCall
             }
 
             BinaryUtils.WriteUInt32(data, CustomOffset + 1, eventInfo.EventId);
-            OnSendData(new BufferSegment(data, CustomOffset, dataLength + parameterLength, Cache.Pool));
+            OnSendData(new BufferSegment(data, CustomOffset, dataLength + parameterLength, Cache.Pool)).Forget();
         }
 
         private async Task<BufferSegment> ExecuteMethod(byte[] data, int offset)

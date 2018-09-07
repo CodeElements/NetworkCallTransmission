@@ -21,7 +21,7 @@ namespace CodeElements.NetworkCall.NetSerializer.Test
                 ArrayPool<byte>.Shared);
 
             Assert.Equal(new ArraySegment<byte>(new byte[4]), new ArraySegment<byte>(buffer, 0, 4));
-            Assert.Equal(18, count);
+            Assert.Equal(14, count);
 
             var result = _networkSerializer.Deserialize(typeof(string), buffer, 4);
             Assert.Equal("Hello World", (string) result);
