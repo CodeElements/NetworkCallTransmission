@@ -8,12 +8,15 @@ using System.Threading;
 using System.Threading.Tasks;
 using CodeElements.NetworkCall.Extensions;
 using CodeElements.NetworkCall.Internal;
+using CodeElements.NetworkCall.Logging;
 using CodeElements.NetworkCall.Proxy;
 
 namespace CodeElements.NetworkCall
 {
     public class NetworkCallClient<TInterface> : DataTransmitter, IAsyncInterceptor, IDisposable
     {
+        private static readonly ILog Logger = LogProvider.For<NetworkCallClient<TInterface>>();
+
         private const int EstimatedDataPerParameter = 200;
 
         private readonly INetworkSerializer _serializer;
@@ -27,8 +30,8 @@ namespace CodeElements.NetworkCall
 
         public NetworkCallClient(INetworkSerializer serializer, ArrayPool<byte> pool)
         {
-            _serializer = serializer;
-            _pool = pool;
+            _serializer = serializer ?? throw new ArgumentNullException(nameof(serializer));
+            _pool = pool ?? throw new ArgumentNullException(nameof(pool));
 
             var interfaceType = typeof(TInterface).GetTypeInfo();
             if (!interfaceType.IsInterface)
@@ -41,14 +44,6 @@ namespace CodeElements.NetworkCall
             _subscribedEvents = new ConcurrentDictionary<uint, EventInfo>();
 
             _lazyImplementation = new Lazy<TInterface>(InterfaceFactory);
-        }
-
-        private TInterface InterfaceFactory()
-        {
-            var instance = CachedProxyFactory<TInterface>.Create(this, _networkCallEventProvider);
-            _networkCallEventProvider.Proxy = (IEventInterceptorProxy) instance;
-
-            return instance;
         }
 
         public void Dispose()
@@ -88,6 +83,8 @@ namespace CodeElements.NetworkCall
                 dictionary.Add(methodInfo, methodCache);
             }
 
+            Logger.Debug("Method cache initialized, methods found: {methodsCount}", dictionary.Count);
+
             if (!dictionary.Any())
                 throw new ArgumentException("The interface must at least provide one method.", nameof(interfaceType));
 
@@ -97,6 +94,8 @@ namespace CodeElements.NetworkCall
         public override void ReceiveData(byte[] data, int offset)
         {
             var responseType = (NetworkCallResponse) data[offset++];
+            Logger.Trace("Receive data {dataLength} with offset {offset} and opCode {opCode}", data.Length, offset, responseType);
+
             switch (responseType)
             {
                 case NetworkCallResponse.MethodExecuted:
@@ -124,25 +123,38 @@ namespace CodeElements.NetworkCall
             var callbackId = BitConverter.ToUInt32(data, offset);
             offset += 4;
 
+            Logger.Trace("Receive method response for {callbackId}", callbackId);
+
             if (!_waitingTasks.TryRemove(callbackId, out var waiter))
+            {
+                Logger.Warn("The method call for id {callbackId} was not found, package is ignored.", callbackId);
                 return;
+            }
 
             var (type, completionSource) = waiter;
 
             switch (response)
             {
                 case NetworkCallResponse.MethodExecuted:
+                    Logger.Debug("Set method {callbackId} executed without an object result.", callbackId);
                     completionSource.SetResult(null);
                     break;
                 case NetworkCallResponse.ResultReturned:
+                    Logger.Trace("Deserialize result for {callbackId}...", callbackId);
                     var result = _serializer.Deserialize(type, data, offset);
+
+                    Logger.Debug("Set method {callbackId} executed with result object {@object}", result);
                     completionSource.SetResult(result);
                     break;
                 case NetworkCallResponse.Exception:
+                    Logger.Trace("Deserialize exception for {callbackId}...", callbackId);
                     var exception = _serializer.DeserializeException(data, offset);
+
+                    Logger.Debug("Set method {callbackId} faulted with exception {@exception}", exception);
                     completionSource.SetException(exception);
                     break;
                 case NetworkCallResponse.MethodNotImplemented:
+                    Logger.Debug("Set method {callbackId} faulted with NotImplementedException");
                     completionSource.SetException(new NotImplementedException("The remote method is not implemented."));
                     break;
                 default:
@@ -153,8 +165,13 @@ namespace CodeElements.NetworkCall
         private void TriggerEventReceived(byte[] data, int offset, bool withParameter)
         {
             var eventId = BitConverter.ToUInt32(data, offset);
+
+            Logger.Trace("Receive event {eventId} triggered", eventId);
             if (!_subscribedEvents.TryGetValue(eventId, out var eventInfo))
+            {
+                Logger.Warn("Event {eventId} was not found", eventId);
                 return;
+            }
 
             object parameter;
             if (!withParameter)
@@ -163,21 +180,30 @@ namespace CodeElements.NetworkCall
             }
             else
             {
-                var eventParmType = eventInfo.EventHandlerType.GenericTypeArguments[0];
-                parameter = _serializer.Deserialize(eventParmType, data, offset + 8);
+                Logger.Trace("Deserialize event {eventId} parameter", eventId);
+
+                var eventParamType = eventInfo.EventHandlerType.GenericTypeArguments[0];
+                parameter = _serializer.Deserialize(eventParamType, data, offset + 8);
+
+                Logger.Debug("Deserialized event {eventId} parameter: {@object}", eventId, parameter);
             }
 
+            Logger.Trace("Trigger event {eventId}", eventId);
             _networkCallEventProvider.TriggerEvent(eventInfo, parameter);
         }
 
         void IAsyncInterceptor.InterceptAsynchronous(IInvocation invocation)
         {
+            Logger.Trace("Intercept method invocation {@invocation}", invocation);
+
             var methodCache = _cachedMethods[invocation.MethodInfo];
             invocation.ReturnValue = SendMethodCall(methodCache, invocation.Arguments);
         }
 
         void IAsyncInterceptor.InterceptAsynchronous<TResult>(IInvocation invocation)
         {
+            Logger.Trace("Intercept generic method invocation {@invocation}", invocation);
+
             var methodCache = _cachedMethods[invocation.MethodInfo];
             invocation.ReturnValue = Task.Run(async () =>
             {
@@ -188,6 +214,8 @@ namespace CodeElements.NetworkCall
 
         internal void SubscribeEvents(IReadOnlyList<(EventInfo, uint)> events)
         {
+            Logger.Trace("Subscribe events {@events}", events);
+
             if (events.Count > 0)
             {
                 foreach (var (eventInfo, eventId) in events)
@@ -200,6 +228,8 @@ namespace CodeElements.NetworkCall
 
         internal void UnsubscribeEvents(IReadOnlyList<(EventInfo, uint)> events)
         {
+            Logger.Trace("Unsubscribe events {@events}", events);
+
             if (events.Count > 0)
             {
                 foreach (var (_, eventId) in events)
@@ -212,8 +242,8 @@ namespace CodeElements.NetworkCall
 
         private void SendEventAction(IList<uint> events, bool subscribe)
         {
-            var bufferLength = CustomOffset + 1 /* prefix */ + 2 /* amount of events */ + events.Count * 8;
-            var buffer = _pool.Rent(bufferLength);
+            var bufferLength = 1 /* prefix */ + 2 /* amount of events */ + events.Count * 8;
+            var buffer = _pool.Rent(bufferLength + CustomOffset);
             buffer[CustomOffset] =
                 (byte) (subscribe ? NetworkCallOpCode.SubscribeEvent : NetworkCallOpCode.UnsubscribeEvent);
 
@@ -227,10 +257,10 @@ namespace CodeElements.NetworkCall
             OnSendData(new BufferSegment(buffer, CustomOffset, bufferLength, _pool)).Forget();
         }
 
-        private Task<object> SendMethodCall(CachedMethod cachedMethod, object[] parameters)
+        private async Task<object> SendMethodCall(CachedMethod cachedMethod, object[] parameters)
         {
             if (cachedMethod == null)
-                throw new ArgumentException("The parameter cannot be null.", nameof(cachedMethod));
+                throw new ArgumentException("The cached method cannot be null.", nameof(cachedMethod));
             if (cachedMethod == null)
                 throw new ArgumentException("The parameter cannot be null.", nameof(parameters));
 
@@ -262,7 +292,7 @@ namespace CodeElements.NetworkCall
                 bufferOffset += parameterLength;
             }
 
-            //write opcode
+            //write opCode
             buffer[CustomOffset] = (byte) NetworkCallOpCode.ExecuteMethod;
 
             //write callback id
@@ -275,7 +305,7 @@ namespace CodeElements.NetworkCall
             _waitingTasks.TryAdd(callbackId,
                 (cachedMethod.ReturnType, taskCompletionSource)); //impossible that this goes wrong
 
-            OnSendData(new BufferSegment(buffer, CustomOffset, bufferOffset, _pool)).Forget(); //no need to await that
+            OnSendData(new BufferSegment(buffer, CustomOffset, bufferOffset - CustomOffset, _pool)).Forget(); //no need to await that
 
             var cancellationToken = parameters.OfType<CancellationToken>().FirstOrDefault();
             CancellationTokenRegistration registration;
@@ -287,10 +317,10 @@ namespace CodeElements.NetworkCall
             {
                 if (WaitTimeout != TimeSpan.Zero)
                 {
-                    return taskCompletionSource.Task.TimeoutAfter(WaitTimeout);
+                    return await taskCompletionSource.Task.TimeoutAfter(WaitTimeout);
                 }
 
-                return taskCompletionSource.Task;
+                return await taskCompletionSource.Task;
             }
             catch (Exception ex) when (ex is OperationCanceledException || ex is TimeoutException)
             {
@@ -301,6 +331,16 @@ namespace CodeElements.NetworkCall
             {
                 registration.Dispose();
             }
+        }
+
+        private TInterface InterfaceFactory()
+        {
+            var instance = CachedProxyFactory<TInterface>.Create(this, _networkCallEventProvider);
+            _networkCallEventProvider.Proxy = (IEventInterceptorProxy)instance;
+
+            Logger.Debug("The interface proxy was created and is initialized.");
+
+            return instance;
         }
     }
 }

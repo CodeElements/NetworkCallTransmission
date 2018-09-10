@@ -28,11 +28,7 @@ namespace CodeElements.NetworkCall.Test
 
         protected virtual Task SendData(BufferSegment data, DataTransmitter target)
         {
-            using (data)
-            {
-                target.ReceiveData(data.Buffer, data.Offset);
-            }
-
+            target.ReceiveData(data.Buffer, data.Offset);
             return Task.CompletedTask;
         }
     }

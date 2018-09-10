@@ -17,9 +17,9 @@ namespace CodeElements.NetworkCall
         private NetworkCallServerCache(IReadOnlyDictionary<uint, MethodInvoker> methodInvokers,
             IReadOnlyDictionary<uint, NetworkEventInfo> networkEvents, ArrayPool<byte> pool)
         {
-            MethodInvokers = methodInvokers;
-            NetworkEvents = networkEvents;
-            Pool = pool;
+            MethodInvokers = methodInvokers ?? throw new ArgumentNullException(nameof(methodInvokers));
+            NetworkEvents = networkEvents ?? throw new ArgumentNullException(nameof(networkEvents));
+            Pool = pool ?? throw new ArgumentNullException(nameof(pool));
         }
 
         internal IReadOnlyDictionary<uint, MethodInvoker> MethodInvokers { get; }

@@ -3,11 +3,12 @@
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
     <DefineConstants>NETSERIALIZER</DefineConstants>
+    <GeneratePackageOnBuild Condition="'$(Configuration)' == 'Release'">true</GeneratePackageOnBuild>
   </PropertyGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\..\CodeElements.NetworkCall\CodeElements.NetworkCall.csproj" />
-    <ProjectReference Include="..\NetSerializer\NetSerializer\NetSerializer.csproj" />
+    <ProjectReference Include="..\NetSerializer\NetSerializer\CodeElements.NetSerializer.csproj" />
   </ItemGroup>
 
   <Import Project="..\..\Serializer\ExceptionWrapping\ExceptionWrapping.projitems" Label="Shared" />

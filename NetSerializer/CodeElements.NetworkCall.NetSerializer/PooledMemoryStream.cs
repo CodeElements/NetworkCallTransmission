@@ -61,12 +61,12 @@ namespace CodeElements.NetworkCall.NetSerializer
 
         public override int Read(byte[] buffer, int offset, int count)
         {
-            var readlen = count > _length - _position ? _length - _position : count;
-            if (readlen > 0)
+            var readLen = count > _length - _position ? _length - _position : count;
+            if (readLen > 0)
             {
-                Buffer.BlockCopy(_currentBuffer, _position + _bufferOffset, buffer, offset, readlen);
-                _position += readlen;
-                return readlen;
+                Buffer.BlockCopy(_currentBuffer, _position + _bufferOffset, buffer, offset, readLen);
+                _position += readLen;
+                return readLen;
             }
 
             return 0;
@@ -87,7 +87,7 @@ namespace CodeElements.NetworkCall.NetSerializer
                     _position += (int) offset;
                     break;
                 default:
-                    throw new InvalidOperationException("unknown SeekOrigin");
+                    throw new InvalidOperationException("Unknown SeekOrigin");
             }
 
             if (_position < 0 || _position + _bufferOffset > _length)
@@ -173,7 +173,7 @@ namespace CodeElements.NetworkCall.NetSerializer
         }
 
         /// <summary>Create ArraySegment for current stream data without allocation buffer</summary>
-        /// <remarks>After disposing stream, manupilating returned value(read or write) may cause undefined behavior</remarks>
+        /// <remarks>After disposing stream, manipulating returned value(read or write) may cause undefined behavior</remarks>
         public ArraySegment<byte> ToUnsafeArraySegment() => new ArraySegment<byte>(_currentBuffer, _bufferOffset, _length);
     }
 }

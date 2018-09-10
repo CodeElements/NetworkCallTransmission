@@ -14,14 +14,10 @@ namespace CodeElements.NetworkCall.Test
 
         protected override Task SendData(BufferSegment data, DataTransmitter target)
         {
-            using (data)
-            {
-                var buffer = new byte[data.Length + Offset];
-                Buffer.BlockCopy(data.Buffer, 0, buffer, Offset, data.Length);
+            var buffer = new byte[data.Length + Offset];
+            Buffer.BlockCopy(data.Buffer, 0, buffer, Offset, data.Length);
 
-                target.ReceiveData(buffer, Offset);
-            }
-
+            target.ReceiveData(buffer, Offset);
             return Task.CompletedTask;
         }
 

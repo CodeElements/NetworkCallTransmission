@@ -66,7 +66,7 @@ namespace CodeElements.NetworkCall
         public int Length { get; }
 
         /// <summary>
-        ///     Dispose the buffer. This is extremly important if buffer pooling is used
+        ///     Dispose the buffer. This is extremely important if buffer pooling is used
         /// </summary>
         public void Dispose()
         {

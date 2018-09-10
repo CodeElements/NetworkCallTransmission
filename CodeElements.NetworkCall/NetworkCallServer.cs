@@ -134,11 +134,13 @@ namespace CodeElements.NetworkCall
             //(BODY     - return object length      - the serialized return object)
 
             var methodId = BitConverter.ToUInt32(data, offset + 4);
+            var callbackId = BitConverter.ToInt32(data, offset);
 
             const int responseHeaderLength = 4;
             void WriteResponseHeader(byte[] buffer)
             {
-                Buffer.BlockCopy(data, offset, buffer, CustomOffset + 1, 4); //copy callback id
+                //Buffer.BlockCopy(data, offset, buffer, CustomOffset + 1, 4);
+                BinaryUtils.WriteInt32(buffer, CustomOffset + 1, callbackId);
             }
 
             if (!Cache.MethodInvokers.TryGetValue(methodId, out var methodInvoker))

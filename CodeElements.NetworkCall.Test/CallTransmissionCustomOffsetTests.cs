@@ -17,13 +17,10 @@ namespace CodeElements.NetworkCall.Test
 
         protected override Task SendData(BufferSegment data, DataTransmitter target)
         {
-            using (data)
-            {
-                var nukeLength = target == Client ? ExecuterOffset : ProtocolOffset;
+            var nukeLength = target == Client ? ExecuterOffset : ProtocolOffset;
 
-                Buffer.BlockCopy(new byte[nukeLength], 0, data.Buffer, 0, nukeLength); //null all offset bytes
-                target.ReceiveData(data.Buffer, data.Offset);
-            }
+            Buffer.BlockCopy(new byte[nukeLength], 0, data.Buffer, 0, nukeLength); //null all offset bytes
+            target.ReceiveData(data.Buffer, data.Offset);
 
             return Task.CompletedTask;
         }
