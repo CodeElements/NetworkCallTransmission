@@ -12,6 +12,7 @@ namespace CodeElements.NetworkCall
         private readonly INetworkSerializer _serializer;
         private const int EstimatedResultBufferSize = 1024;
         private const int EstimatedEventParameterSize = 512;
+        private readonly FifoAsyncLock _eventLock;
 
         /// <summary>
         ///     Initialize a new instance of <see cref="NetworkCallServer{TInterface}" />
@@ -28,6 +29,7 @@ namespace CodeElements.NetworkCall
             _implementation = implementation;
             _serializer = serializer;
             Cache = cache;
+            _eventLock = new FifoAsyncLock();
         }
 
         public NetworkCallServerCache Cache { get; }
@@ -81,7 +83,7 @@ namespace CodeElements.NetworkCall
             }
         }
 
-        private void HandleEventAction(NetworkEventInfo eventInfo, object parameter)
+        private async void HandleEventAction(NetworkEventInfo eventInfo, object parameter)
         {
             //RETURN:
             //HEAD      - byte                      - response type
@@ -90,11 +92,11 @@ namespace CodeElements.NetworkCall
             //(BODY     - integer                   - body length)
             //(BODY     - body length               - the serialized object)
 
-            var dataLength = CustomOffset + 1 /* response type */ + 4 /* event id */;
+            var dataLength = 1 /* response type */ + 4 /* event id */;
             if (parameter != null)
                 dataLength += 4 /* length */;
 
-            var takenBuffer = Cache.Pool.Rent(dataLength + EstimatedEventParameterSize);
+            var takenBuffer = Cache.Pool.Rent(dataLength + EstimatedEventParameterSize + CustomOffset);
             var data = takenBuffer;
 
             int parameterLength;
@@ -115,7 +117,17 @@ namespace CodeElements.NetworkCall
             }
 
             BinaryUtils.WriteUInt32(data, CustomOffset + 1, eventInfo.EventId);
-            OnSendData(new BufferSegment(data, CustomOffset, dataLength + parameterLength, Cache.Pool)).Forget();
+
+            //keep event order
+            await _eventLock.EnterAsync();
+            try
+            {
+                await OnSendData(new BufferSegment(data, CustomOffset, dataLength + parameterLength, Cache.Pool));
+            }
+            finally
+            {
+                _eventLock.Release();
+            }
         }
 
         private async Task<BufferSegment> ExecuteMethod(byte[] data, int offset)
@@ -145,8 +157,8 @@ namespace CodeElements.NetworkCall
 
             if (!Cache.MethodInvokers.TryGetValue(methodId, out var methodInvoker))
             {
-                var responseLength = CustomOffset + responseHeaderLength + 1 /* response type */;
-                var response = Cache.Pool.Rent(responseLength);
+                var responseLength = responseHeaderLength + 1 /* response type */;
+                var response = Cache.Pool.Rent(responseLength + CustomOffset);
                 WriteResponseHeader(response);
                 response[CustomOffset + responseLength] = (byte) NetworkCallResponse.MethodNotImplemented;
                 return new BufferSegment(response, CustomOffset, responseLength, Cache.Pool);
@@ -172,9 +184,8 @@ namespace CodeElements.NetworkCall
             }
             catch (Exception e)
             {
-                var responseLength = CustomOffset + responseHeaderLength + 1 /* response type */ +
-                                     EstimatedResultBufferSize /* exception */;
-                var takenBuffer = Cache.Pool.Rent(responseLength);
+                var responseLength = responseHeaderLength + 1 /* response type */ + EstimatedResultBufferSize /* exception */;
+                var takenBuffer = Cache.Pool.Rent(responseLength + CustomOffset);
                 var response = takenBuffer;
 
                 var length = _serializer.SerializeException(ref response, CustomOffset + responseHeaderLength + 1, e, Cache.Pool);
@@ -183,10 +194,10 @@ namespace CodeElements.NetworkCall
                 response[CustomOffset] = (byte) NetworkCallResponse.Exception;
 
                 if (takenBuffer == response)
-                    return new BufferSegment(response, CustomOffset, length + responseHeaderLength + 1 + CustomOffset, Cache.Pool);
+                    return new BufferSegment(response, CustomOffset, length + responseHeaderLength + 1, Cache.Pool);
 
                 Cache.Pool.Return(takenBuffer);
-                return new BufferSegment(response, CustomOffset, length + responseHeaderLength + 1 + CustomOffset, Cache.Pool);
+                return new BufferSegment(response, CustomOffset, length + responseHeaderLength + 1, Cache.Pool);
             }
 
             if (methodInvoker.ReturnsResult)
@@ -200,19 +211,19 @@ namespace CodeElements.NetworkCall
                 response[CustomOffset] = (byte) NetworkCallResponse.ResultReturned;
 
                 var responseLength = _serializer.Serialize(methodInvoker.ReturnType, ref response,
-                    CustomOffset + responseHeaderLength + 1, result, Cache.Pool);
+                    responseHeaderLength + 1 + CustomOffset, result, Cache.Pool);
 
                 if (takenBuffer == response)
-                    return new BufferSegment(response, CustomOffset, responseLength + CustomOffset + responseHeaderLength + 1,
+                    return new BufferSegment(response, CustomOffset, responseLength + responseHeaderLength + 1,
                         Cache.Pool);
 
                 Cache.Pool.Return(takenBuffer);
-                return new BufferSegment(response, CustomOffset, responseLength + CustomOffset + responseHeaderLength + 1, Cache.Pool);
+                return new BufferSegment(response, CustomOffset, responseLength + responseHeaderLength + 1, Cache.Pool);
             }
             else
             {
-                var responseLength = CustomOffset /* user offset */ + responseHeaderLength + 1 /* response type */;
-                var response = Cache.Pool.Rent(responseLength);
+                var responseLength = responseHeaderLength + 1 /* response type */;
+                var response = Cache.Pool.Rent(responseLength + CustomOffset);
                 WriteResponseHeader(response);
                 response[CustomOffset] = (byte) NetworkCallResponse.MethodExecuted;
                 return new BufferSegment(response, CustomOffset, responseLength, Cache.Pool);
@@ -224,6 +235,8 @@ namespace CodeElements.NetworkCall
             //unsubscribe events
             foreach (var cacheNetworkEvent in Cache.NetworkEvents)
                 cacheNetworkEvent.Value.Unsubscribe(_implementation);
+
+            _eventLock.Dispose();
         }
     }
 }
