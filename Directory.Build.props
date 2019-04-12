@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project>
+  <PropertyGroup>
+    <LangVersion>latest</LangVersion>
+    <Authors>Anapher</Authors>
+    <Copyright>Copyright 2019 Vincent</Copyright>
+    <Company>CodeElements</Company>
+    <PackageProjectUrl>https://github.com/CodeElements/NetworkCallTransmission</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/CodeElements/NetworkCallTransmission.git</RepositoryUrl>
+    <PackageLicenseUrl>https://github.com/CodeElements/NetworkCallTransmission/blob/master/LICENSE</PackageLicenseUrl>
+  </PropertyGroup>
+</Project>

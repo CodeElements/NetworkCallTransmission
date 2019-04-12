@@ -3,7 +3,8 @@
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
     <DefineConstants>NETSERIALIZER</DefineConstants>
-    <GeneratePackageOnBuild Condition="'$(Configuration)' == 'Release'">true</GeneratePackageOnBuild>
+    <VersionPrefix>1.0.0</VersionPrefix>
+    <Description>The code to use NetSerializer as serializer for CodeElements.NetworkCall.</Description>
   </PropertyGroup>
 
   <ItemGroup>

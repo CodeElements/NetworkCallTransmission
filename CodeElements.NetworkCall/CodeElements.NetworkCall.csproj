@@ -3,9 +3,9 @@
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <LangVersion>latest</LangVersion>
     <DefineConstants>TESTABLE</DefineConstants>
-    <GeneratePackageOnBuild Condition="'$(Configuration)' == 'Release'">true</GeneratePackageOnBuild>
+    <VersionPrefix>1.0.0</VersionPrefix>
+    <Description>Make async calls over any network interface (e. g. TCP, WebSockets) using high performance serializers.</Description>
   </PropertyGroup>
 
   <ItemGroup>
