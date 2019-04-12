@@ -7,6 +7,6 @@
     <Company>CodeElements</Company>
     <PackageProjectUrl>https://github.com/CodeElements/NetworkCallTransmission</PackageProjectUrl>
     <RepositoryUrl>https://github.com/CodeElements/NetworkCallTransmission.git</RepositoryUrl>
-    <PackageLicenseUrl>https://github.com/CodeElements/NetworkCallTransmission/blob/master/LICENSE</PackageLicenseUrl>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
   </PropertyGroup>
 </Project>
