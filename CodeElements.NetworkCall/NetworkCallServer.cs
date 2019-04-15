@@ -13,6 +13,8 @@ namespace CodeElements.NetworkCall
         private const int EstimatedResultBufferSize = 1024;
         private const int EstimatedEventParameterSize = 512;
         private readonly FifoAsyncLock _eventLock;
+        private bool _isDisposed;
+        private readonly object _disposedLock = new object();
 
         /// <summary>
         ///     Initialize a new instance of <see cref="NetworkCallServer{TInterface}" />
@@ -85,6 +87,9 @@ namespace CodeElements.NetworkCall
 
         private async void HandleEventAction(NetworkEventInfo eventInfo, object parameter)
         {
+            if (_isDisposed)
+                return;
+
             //RETURN:
             //HEAD      - byte                      - response type
             //HEAD      - uinteger                  - event id
@@ -118,8 +123,20 @@ namespace CodeElements.NetworkCall
 
             BinaryUtils.WriteUInt32(data, CustomOffset + 1, eventInfo.EventId);
 
+            Task eventLockTask;
+            lock (_disposedLock)
+            {
+                if (_isDisposed)
+                {
+                    Cache.Pool.Return(data);
+                    return;
+                }
+
+                eventLockTask = _eventLock.EnterAsync();
+            }
+
             //keep event order
-            await _eventLock.EnterAsync();
+            await eventLockTask;
             try
             {
                 await OnSendData(new BufferSegment(data, CustomOffset, dataLength + parameterLength, Cache.Pool));
@@ -236,7 +253,12 @@ namespace CodeElements.NetworkCall
             foreach (var cacheNetworkEvent in Cache.NetworkEvents)
                 cacheNetworkEvent.Value.Unsubscribe(_implementation);
 
-            _eventLock.Dispose();
+            lock (_disposedLock)
+            {
+                _isDisposed = true;
+
+                _eventLock.EnterAsync().ContinueWith(_ => _eventLock.Dispose());
+            }
         }
     }
 }
